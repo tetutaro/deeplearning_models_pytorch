@@ -1,0 +1,11 @@
+{
+    "min_word_len": 3,
+    "max_word_len": 512,
+    "dictionary_name": "juman",
+    "keyedvector_bin": "binaries/keyedvectors/fasttext_kv_mecab_juman.bin",
+    "chopping_words": ["\u3000", " "],
+    "extract_speeches": ["名詞", "動詞", "形容詞", "連体詞"],
+    "is_wakati": false,
+    "use_original": false
+}
+

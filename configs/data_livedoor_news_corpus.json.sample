@@ -1,0 +1,5 @@
+{
+    "data_json": "data/livedoor_news_corpus.json",
+    "document_column": "body",
+    "category_column": "category"
+}

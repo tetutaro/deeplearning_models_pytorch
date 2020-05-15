@@ -1,0 +1,10 @@
+{
+    "batch_size": 64,
+    "validation_rate": 0.25,
+    "num_workers": 8,
+    "min_epochs": 25,
+    "max_epochs": 100,
+    "min_delta": 0.0001,
+    "patience": 0,
+    "learning_rate": 0.001
+}

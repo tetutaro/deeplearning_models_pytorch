@@ -1,0 +1,4 @@
+*.gz
+text
+*.json
+synset_words.txt
