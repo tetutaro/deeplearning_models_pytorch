@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-wf = open('sample_images/labels.txt', 'wt')
+wf = open('gradcam_samples/labels.txt', 'wt')
 with open('synset_words.txt', 'rt') as rf:
     line = rf.readline()
     while line:
