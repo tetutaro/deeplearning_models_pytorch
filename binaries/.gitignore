@@ -1,0 +1,6 @@
+*.zip
+NICT_BERT-base_JapaneseWikipedia_100K
+keyedvectors
+TextCNN
+BertClassification
+BertSum
