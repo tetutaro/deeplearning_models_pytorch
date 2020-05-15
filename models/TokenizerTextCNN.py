@@ -147,7 +147,6 @@ class TokenizerTextCNN(Tokenizer):
             word_ids_list, label_list
         )
         # summarize original data
-        'word_len',
         documents = list()
         for o, s, c in zip(
             original_list, spanned_list, category_list
