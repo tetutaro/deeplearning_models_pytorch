@@ -4,12 +4,13 @@ from __future__ import annotations
 from typing import Dict, List
 import os
 from operator import itemgetter
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from sklearn.model_selection import ShuffleSplit
 import torch
 from torch.utils.data import DataLoader, Subset
 from .Config import Config
 
+DEFAULT_BATCH_SIZE = 100
 DEFAULT_FIT = True
 DEFAULT_REFIT = False
 DEFAULT_PREDICT = True
@@ -17,75 +18,53 @@ DEFAULT_OUTPUT_TRAIN = False
 DEFAULT_TEST_RATE = 0.1
 
 
-class ConfigProcessor(Config):
+class ConfigProcessor(Config, ABC):
     processor_params = [
         # name, vtype, is_require, default
         ('config_data_json', str, True, None),
         ('config_preprocessor_json', str, True, None),
         ('config_model_json', str, True, None),
         ('config_lightning_json', str, True, None),
+        ('batch_size', int, False, DEFAULT_BATCH_SIZE),
+        ('test_rate', float, False, DEFAULT_TEST_RATE),
         ('fit', bool, False, DEFAULT_FIT),
         ('refit', bool, False, DEFAULT_REFIT),
         ('predict', bool, False, DEFAULT_PREDICT),
+        ('output_extension', str, True, None),
         ('output_train', bool, False, DEFAULT_OUTPUT_TRAIN),
-        ('test_rate', float, False, DEFAULT_TEST_RATE),
     ]
 
-    def __init__(
-        self: ConfigProcessor,
-        config_json: str
-    ) -> None:
-        # call parent function
-        super().__init__()
-        config = dict()
-        self.load_one(config, config_json)
-        # set parameters
-        for param in self.processor_params:
-            self.init_param(config, *param)
-        return
 
-
-class Processor(object):
-    def __init__(self: Processor, config: ConfigProcessor) -> None:
-        self.config = config
-        return
-
-    def preprocess(self: Processor, load: bool) -> None:
-        # setup config preprocessor
-        config_prep = self.config.config_prep_class(
+class Processor(ABC):
+    def _preprocess(self: Processor, load: bool) -> None:
+        # create preprocessor instance
+        prep = self.config.prep_class(
             self.config.config_data_json,
             self.config.config_preprocessor_json
         )
         if load:
-            # load config preprocessor
-            assert(os.path.exists(config_prep.config_json))
-            config_prep.load(
-                config_prep.config_json
-            )
-        # create proprocessor instance
-        prep = self.config.prep_class(config_prep)
+            prep.load()
         # preprocess
         self.dataset, self.resources = prep.preprocess()
-        if self.config.fit:
+        if not load:
             prep.save()
-        self.cache_preprocess({
-            'config_prep': config_prep,
-            'prep': prep,
-        })
+        self._cache_preprocess({'prep': prep})
         return
 
-    def cache_preprocess(self: Processor, preps: Dict) -> None:
-        self.output_json_prefix = os.path.join(
+    @abstractmethod
+    def _cache_preprocess(self: Processor, preps: Dict) -> None:
+        prep = preps['prep']
+        self.output_prefix = os.path.join(
             'results',
             "_".join([
-                preps['config_prep'].model_name,
-                preps['config_prep'].data_name
+                prep.config.model_name,
+                prep.config.data_name
             ])
         )
         self.takeover_config = dict()
         return
 
-    def split_data(self: Processor) -> None:
+    def _split_data(self: Processor) -> None:
         # devide data into train and test
         if self.config.test_rate > 0:
             ss = ShuffleSplit(n_splits=1, test_size=self.config.test_rate)
@@ -99,31 +78,19 @@ class Processor(object):
             self.train_resources = self.resources
         return
 
-    def fit(self: Processor, load: bool) -> None:
-        config_model = self.config.config_model_class(
+    def _fit(self: Processor, load: bool) -> None:
+        # create model instance
+        model = self.config.model_class(
             self.takeover_config,
             self.config.config_model_json
         )
-        config_light = self.config.config_light_class(
-            self.config.config_lightning_json
-        )
-        # restore information to using them in followings
-        self.saved_config_json = config_model.config_json
-        self.batch_size = config_light.batch_size
-        if not self.config.fit:
-            return
         if load:
-            assert(os.path.exists(self.saved_config_json))
-            config_model.load(
-                self.saved_config_json
-            )
-        model = self.config.model_class(config_model)
-        if load:
-            # load model
             model.load()
         # create lightning instance
         light = self.config.light_class(
-            config_light, model, self.train_dataset
+            self.config.config_lightning_json,
+            model,
+            self.train_dataset
         )
         # fit
         light.fit()
@@ -131,21 +98,18 @@ class Processor(object):
         model.save()
         return
 
-    def reload_model(self: Processor) -> None:
+    def _reload_model(self: Processor) -> None:
         # load model
-        config_model = self.config.config_model_class(
+        self.model = self.config.model_class(
             self.takeover_config,
             self.config.config_model_json
         )
-        config_model.load(
-            self.saved_config_json
-        )
-        self.model = self.config.model_class(config_model)
         self.model.load()
+        self.model.eval()
         return
 
     @abstractmethod
-    def predict(
+    def _predict(
         self: Processor,
         dataloader: DataLoader,
         resources: List[Dict]
@@ -156,27 +120,28 @@ class Processor(object):
             _ = pred.cpu().detach().numpy()
         return
 
-    def get_output_fname(self: Processor, dtype: str) -> str:
+    def _get_output_fname(self: Processor, dtype: str) -> str:
+        fname = self.output_prefix
         if dtype == "train":
-            postfix = "_train.json"
+            fname += "_train." + self.config.output_extension
         elif dtype == "test":
-            postfix = "_test.json"
+            fname += "_test." + self.config.output_extension
         else:
-            postfix = ".json"
-        return self.output_json_prefix + postfix
+            fname += "." + self.config.output_extension
+        return fname
 
     @abstractmethod
-    def output_resources(
+    def _output_resources(
         self: Processor,
         resources: List[Dict],
         dtype: str
     ) -> None:
-        output_fname = self.get_output_fname(dtype)
+        output_fname = self._get_output_fname(dtype)
         with open(output_fname, 'wt') as wf:
             wf.write('')
         return
 
-    def predict_and_output(self: Processor, dtype: str) -> None:
+    def _predict_and_output(self: Processor, dtype: str) -> None:
         # detect computing device
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
@@ -195,10 +160,10 @@ class Processor(object):
             resources = self.resources
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size, shuffle=False, num_workers=0
+            batch_size=self.config.batch_size, shuffle=False, num_workers=0
         )
-        self.predict(dataloader, resources)
-        self.output_resources(resources, dtype)
+        self._predict(dataloader, resources)
+        self._output_resources(resources, dtype)
         return
 
     def process(self: Processor):
@@ -209,16 +174,17 @@ class Processor(object):
                 load = False
         else:
             load = True
-        self.preprocess(load)
-        self.split_data()
-        self.fit(load)
+        self._preprocess(load)
+        self._split_data()
+        if self.config.fit:
+            self._fit(load)
         if not self.config.predict:
             return
-        self.reload_model()
+        self._reload_model()
         if self.config.fit:
             if self.config.output_train:
-                self.predict_and_output("train")
-            self.predict_and_output("test")
+                self._predict_and_output("train")
+            self._predict_and_output("test")
         else:
-            self.predict_and_output("all")
+            self._predict_and_output("all")
         return

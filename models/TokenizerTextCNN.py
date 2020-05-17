@@ -29,15 +29,17 @@ class ConfigTokenizerTextCNN(ConfigTokenizer):
         # model_name
         config = dict()
         config['model_name'] = 'TextCNN'
-        # call parent function
-        super().__init__(
-            config,
-            config_data_json,
-            config_preprocess_json
-        )
+        self._load_two(config, config_data_json, config_preprocess_json)
+        # initialize parent class
+        self._init_preprocessor(config)
+        self._init_tokenizer(config)
         # set parameters
+        for param in self.preprocessor_params:
+            self._init_param(config, *param)
+        for param in self.tokenizer_params:
+            self._init_param(config, *param)
         for param in self.tokenizer_textcnn_params:
-            self.init_param(config, *param)
+            self._init_param(config, *param)
         # value assertion
         assert((
             self.min_word_len > 0
@@ -51,26 +53,31 @@ class ConfigTokenizerTextCNN(ConfigTokenizer):
         ))
         return
 
-    def load(
-        self: ConfigTokenizerTextCNN,
-        config_json: str
-    ) -> None:
-        # call parent function
-        config = super().load(config_json)
+    def load(self: ConfigTokenizerTextCNN) -> None:
+        config = dict()
+        self._load_one(config, self.config_json)
         # set parameters
+        for param in self.preprocessor_params:
+            self._init_param(config, *param)
+        for param in self.tokenizer_params:
+            self._init_param(config, *param)
         for param in self.tokenizer_textcnn_params:
-            self.init_param(config, *param)
+            self._init_param(config, *param)
         return
 
     def save(self: ConfigTokenizerTextCNN) -> None:
         config = dict()
         # save parameters
+        for name, _, _, _ in self.preprocessor_params:
+            self._save_param(config, name)
+        for name, _, _, _ in self.tokenizer_params:
+            self._save_param(config, name)
         for name, _, _, _ in self.tokenizer_textcnn_params:
-            self.save_param(config, name)
-        # call parent function
-        return super().save(config)
+            self._save_param(config, name)
+        self._save(config)
+        return
 
-    def get_max_word_len(
+    def _get_max_word_len(
         self: ConfigTokenizerTextCNN,
         is_encoded: bool
     ) -> int:
@@ -80,7 +87,7 @@ class ConfigTokenizerTextCNN(ConfigTokenizer):
             max_word_len = self.max_word_len
         return max_word_len
 
-    def save_word_len(
+    def _save_word_len(
         self: ConfigTokenizerTextCNN,
         word_len: int
     ) -> None:
@@ -91,12 +98,19 @@ class ConfigTokenizerTextCNN(ConfigTokenizer):
 class TokenizerTextCNN(Tokenizer):
     def __init__(
         self: TokenizerTextCNN,
-        config: ConfigTokenizerTextCNN
+        config_data_json: str,
+        config_preprocess_json: str
     ) -> None:
-        super().__init__(config)
-        self.config = config
-        self.load_mecab()
-        self.load_keyedvectors()
+        self.config = ConfigTokenizerTextCNN(
+            config_data_json,
+            config_preprocess_json
+        )
+        self._load_mecab()
+        self._load_keyedvectors()
+        return
+
+    def load(self: TokenizerTextCNN) -> None:
+        self.config.load()
         return
 
     def save(self: TokenizerTextCNN) -> None:
@@ -107,7 +121,7 @@ class TokenizerTextCNN(Tokenizer):
         self: TokenizerTextCNN
     ) -> Tuple[TensorDataset, List[Dict]]:
         is_encoded = self.config.is_encoded()
-        max_word_len = self.config.get_max_word_len(is_encoded)
+        max_word_len = self.config._get_max_word_len(is_encoded)
         # read input_json_path and extract documents and labels
         original_list = list()
         spanned_list = list()
@@ -135,12 +149,12 @@ class TokenizerTextCNN(Tokenizer):
             word_ids_list.append(preprocessed['word_ids'])
             category_list.append(category)
         # produce labels by encoding categories
-        label_list = self.encode_categories(category_list)
-        word_len, word_ids_list = self.padding_list(
+        label_list = self._encode_categories(category_list)
+        word_len, word_ids_list = self._padding_list(
             word_ids_list, None
         )
         if not is_encoded:
-            self.config.save_word_len(word_len)
+            self.config._save_word_len(word_len)
         word_ids_list = torch.tensor(word_ids_list).long()
         label_list = torch.tensor(label_list)
         dataset = TensorDataset(
@@ -165,10 +179,10 @@ class TokenizerTextCNN(Tokenizer):
         spanned = ''
         word_ids = list()
         # split document into nodes using MeCab
-        for node in self.yield_parsed_node(
-            self.cleaning_text(document)
+        for node in self._yield_parsed_node(
+            self._cleaning_text(document)
         ):
-            surf, word_id = self.get_word_id(node)
+            surf, word_id = self._get_word_id(node)
             if surf is None:
                 continue
             original += surf

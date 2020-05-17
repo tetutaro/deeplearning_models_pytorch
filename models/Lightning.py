@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict
+from typing import List, Dict, Tuple
+from abc import ABC, abstractmethod
 import torch
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader, random_split
@@ -20,7 +21,7 @@ DEFAULT_PATIENCE = 0
 DEFAULT_LEARNING_RATE = 0.001
 
 
-class ConfigLightning(Config):
+class ConfigLightning(Config, ABC):
     lightning_params = [
         # name, vtype, is_require, default
         ('batch_size', int, False, DEFAULT_BATCH_SIZE),
@@ -33,39 +34,22 @@ class ConfigLightning(Config):
         ('learning_rate', float, False, DEFAULT_LEARNING_RATE),
     ]
 
-    def __init__(
-        self: ConfigLightning,
-        config_lightning_json: str
-    ) -> Dict:
-        # call parent function
-        super().__init__()
-        config = dict()
-        self.load_one(config, config_lightning_json)
-        # set parameters
-        for param in self.lightning_params:
-            self.init_param(config, *param)
-        return config
 
-
-class Lightning(LightningModule):
-    def __init__(
+class Lightning(LightningModule, ABC):
+    def _init_lightinig(
         self: Lightning,
-        config: ConfigLightning,
         dataset: TensorDataset
     ) -> None:
-        # initialize parent class
-        super().__init__()
-        self.config = config
         self.dataset = dataset
         # create early stopping instance
         early_stop_callback = EarlyStopping(
             monitor='val_loss',
-            min_delta=config.min_delta,
-            patience=config.patience
+            min_delta=self.config.min_delta,
+            patience=self.config.patience
         )
         # create logger instance
         logger = TensorBoardLogger(
-            'lightning_logs', name=config.log_class_name
+            'lightning_logs', name=self.config.log_class_name
         )
         # detect gpus
         if torch.cuda.is_available():
@@ -78,8 +62,8 @@ class Lightning(LightningModule):
             distributed_backend = None
         # create trainer instance
         self.trainer = Trainer(
-            min_epochs=config.min_epochs,
-            max_epochs=config.max_epochs,
+            min_epochs=self.config.min_epochs,
+            max_epochs=self.config.max_epochs,
             gpus=gpus,
             distributed_backend=distributed_backend,
             early_stop_callback=early_stop_callback,
@@ -124,3 +108,39 @@ class Lightning(LightningModule):
 
     def fit(self: Lightning) -> None:
         return self.trainer.fit(self)
+
+    @abstractmethod
+    def forward(self: Lightning, x: torch.Tensor):
+        return self.model.forward(x)
+
+    @abstractmethod
+    def training_step(
+        self: Lightning,
+        batch: Tuple[torch.Tensor],
+        batch_index: int
+    ) -> Dict:
+        return {
+            'loss': None,
+        }
+
+    @abstractmethod
+    def training_epoch_end(self: Lightning, outputs: List[Dict]) -> Dict:
+        return {
+            'loss': None,
+        }
+
+    @abstractmethod
+    def validation_step(
+        self: Lightning,
+        batch: Tuple[torch.Tensor],
+        batch_index: int
+    ) -> Dict:
+        return {
+            'val_loss': None,
+        }
+
+    @abstractmethod
+    def validation_epoch_end(self: Lightning, outputs: List[Dict]) -> Dict:
+        return {
+            'val_loss': None,
+        }

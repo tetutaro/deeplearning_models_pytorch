@@ -21,31 +21,36 @@ class ConfigLightningTextCNN(ConfigLightning):
         self: ConfigLightningTextCNN,
         config_lightning_json: str
     ) -> Dict:
-        # call parent function
-        config = super().__init__(config_lightning_json)
+        # load json
+        config = dict()
+        self._load_one(config, config_lightning_json)
         # set parameters
+        for param in self.lightning_params:
+            self._init_param(config, *param)
         for param in self.lightning_textcnn_params:
-            self.init_param(config, *param)
+            self._init_param(config, *param)
         return
 
 
 class LightningTextCNN(Lightning):
     def __init__(
         self: LightningTextCNN,
-        config: ConfigLightningTextCNN,
+        config_lightning_json: str,
         model: TextCNN,
         dataset: TensorDataset
     ) -> None:
-        # initialize parent class
-        super().__init__(config, dataset)
+        # initialize LightningModule
+        super().__init__()
+        self.config = ConfigLightningTextCNN(config_lightning_json)
         self.model = model
+        self._init_lightinig(dataset)
         return None
 
-    def forward(self: Lightning, x: torch.Tensor):
+    def forward(self: LightningTextCNN, x: torch.Tensor):
         return self.model.forward(x)
 
     def training_step(
-        self: Lightning,
+        self: LightningTextCNN,
         batch: Tuple[torch.Tensor],
         batch_index: int
     ) -> Dict:
@@ -71,7 +76,10 @@ class LightningTextCNN(Lightning):
             'ndata': ndata,
         }
 
-    def training_epoch_end(self: Lightning, outputs: List[Dict]) -> Dict:
+    def training_epoch_end(
+        self: LightningTextCNN,
+        outputs: List[Dict]
+    ) -> Dict:
         avg_loss = torch.stack([
             x['loss'] for x in outputs
         ]).mean()
@@ -93,7 +101,7 @@ class LightningTextCNN(Lightning):
         }
 
     def validation_step(
-        self: Lightning,
+        self: LightningTextCNN,
         batch: Tuple[torch.Tensor],
         batch_index: int
     ) -> Dict:
@@ -117,7 +125,7 @@ class LightningTextCNN(Lightning):
         }
 
     def validation_epoch_end(
-        self: Lightning,
+        self: LightningTextCNN,
         outputs: List[Dict]
     ) -> Dict:
         avg_loss = torch.stack([

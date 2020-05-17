@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional, Generator
 import os
+from abc import ABC
 import subprocess
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -18,8 +19,8 @@ DEFAULT_IS_WAKATI = False
 DEFAULT_USE_ORIGINAL = False
 
 
-class ConfigTokenizer(ConfigPreprocessor):
-    tokenzier_params = [
+class ConfigTokenizer(ConfigPreprocessor, ABC):
+    tokenizer_params = [
         # name, vtype, is_require, default
         ('dictionary_name', str, True, None),
         ('keyedvector_bin', str, True, None),
@@ -31,37 +32,13 @@ class ConfigTokenizer(ConfigPreprocessor):
         ('unique_categories', [list, str], False, []),
     ]
 
-    def __init__(
+    def _init_tokenizer(
         self: ConfigTokenizer,
-        config: Dict,
-        config_data_json: str,
-        config_preprocess_json: str
+        config: Dict
     ) -> None:
-        # call parent function
-        super().__init__(
-            config,
-            config_data_json,
-            config_preprocess_json
-        )
-        # set parameters
-        for param in self.tokenzier_params:
-            self.init_param(config, *param)
         # value assertion
-        assert(os.path.exists(self.keyedvector_bin))
-        assert(self.dictionary_name in DICTIONARIES)
-        # internal parameters
-        return
-
-    def load(self: ConfigTokenizer, config_json: str) -> Dict:
-        # call parent function
-        return super().load(config_json)
-
-    def save(self: ConfigTokenizer, config: Dict) -> None:
-        # save parameters
-        for name, _, _, _ in self.tokenzier_params:
-            self.save_param(config, name)
-        # call parent function
-        super().save(config)
+        assert(config['dictionary_name'] in DICTIONARIES)
+        assert(os.path.exists(config['keyedvector_bin']))
         return
 
     def save_categories(
@@ -76,17 +53,8 @@ class ConfigTokenizer(ConfigPreprocessor):
         return self.num_class > 0
 
 
-class Tokenizer(Preprocessor):
-    def __init__(
-        self: Tokenizer,
-        config: ConfigTokenizer
-    ) -> None:
-        super().__init__(config)
-        self.config = config
-        self.word_vectors = None
-        return
-
-    def load_mecab(self: Tokenizer) -> None:
+class Tokenizer(Preprocessor, ABC):
+    def _load_mecab(self: Tokenizer) -> None:
         mecab_config_path = None
         mecab_config_cands = [
             "/usr/bin/mecab-config", "/usr/local/bin/mecab-config"
@@ -123,7 +91,7 @@ class Tokenizer(Preprocessor):
             self.orig_index = 6
         return
 
-    def load_keyedvectors(self: Tokenizer) -> None:
+    def _load_keyedvectors(self: Tokenizer) -> None:
         # load KeyedVectors
         self.kvs = KeyedVectors.load_word2vec_format(
             self.config.keyedvector_bin, binary=True
@@ -136,13 +104,13 @@ class Tokenizer(Preprocessor):
         setattr(self, 'word_vectors', word_vectors)
         return
 
-    def cleaning_text(self: Tokenizer, text: str) -> str:
+    def _cleaning_text(self: Tokenizer, text: str) -> str:
         text = han_to_zen(text)
         for chopping_word in self.config.chopping_words:
             text = text.replace(chopping_word, '')
         return text
 
-    def padding_list(
+    def _padding_list(
         self: Tokenizer,
         data: List[List[int]],
         max_word_len: Optional(int)
@@ -156,7 +124,7 @@ class Tokenizer(Preprocessor):
         return max_word_len, ret
 
     # usage of LabelEncoder
-    def encode_categories(
+    def _encode_categories(
         self: Tokenizer,
         category_list: List[str]
     ) -> List[int]:
@@ -175,12 +143,12 @@ class Tokenizer(Preprocessor):
         return label_list
 
     # usage of MeCab (when is_wakati is True)
-    def get_words(self: Tokenizer, text: str) -> List[str]:
+    def _get_words(self: Tokenizer, text: str) -> List[str]:
         assert(self.cnfig.is_wakati is True)
         return self.tagger.parse(text).strip().split(' ')
 
     # usage of MeCab (when is_wakati is False)
-    def yield_parsed_node(
+    def _yield_parsed_node(
         self: Tokenizer,
         text: str
     ) -> Generator[str, None, None]:
@@ -191,7 +159,7 @@ class Tokenizer(Preprocessor):
         return
 
     # usage of keyedvectors (when is_wakati is False)
-    def get_word_id(
+    def _get_word_id(
         self: Tokenizer,
         node: str
     ) -> Tuple[Optional[str], Optional[int]]:

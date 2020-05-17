@@ -3,71 +3,42 @@
 from __future__ import annotations
 from typing import Dict, Generator
 import os
+from abc import ABC
 import simplejson as json
 from .Config import Config
 
 
-class ConfigPreprocessor(Config):
+class ConfigPreprocessor(Config, ABC):
     preprocessor_params = [
         # name, vtype, is_require, default
-        ('data_name', str, True, None),
         ('data_json', str, True, None),
+        ('data_name', str, True, None),
         ('base_dir', str, True, None),
         ('config_json', str, True, None),
     ]
 
-    def __init__(
+    def _init_preprocessor(
         self: ConfigPreprocessor,
-        config: Dict,
-        config_data_json: str,
-        config_preprocess_json: str
+        config: Dict
     ) -> None:
-        # call parent function
-        super().__init__()
-        # load json
-        self.load_two(
-            config,
-            config_data_json,
-            config_preprocess_json
-        )
+        assert('model_name' in list(config.keys()))
+        assert('data_json' in list(config.keys()))
         # produce parameters
-        data_name = os.path.splitext(
+        config['data_name'] = os.path.splitext(
             os.path.basename(config['data_json'])
         )[0]
-        base_dir = os.path.join(
-            'binaries', config['model_name'], data_name
+        config['base_dir'] = os.path.join(
+            'binaries', config['model_name'], config['data_name']
         )
-        os.makedirs(base_dir, exist_ok=True)
+        os.makedirs(config['base_dir'], exist_ok=True)
         config['config_json'] = os.path.join(
-            base_dir,
+            config['base_dir'],
             'tokenizer_config.json'
         )
-        config['data_name'] = data_name
-        config['base_dir'] = base_dir
-        # set parameters
-        for param in self.preprocessor_params:
-            self.init_param(config, *param)
         return
 
-    def load(self: ConfigPreprocessor, config_json: str) -> Dict:
-        config = dict()
-        # load json
-        self.load_one(config, config_json)
-        return config
 
-    def save(self, config: Dict) -> None:
-        # save parameters
-        for name, _, _, _ in self.preprocessor_params:
-            self.save_param(config, name)
-        # call parent function
-        return super().save(config)
-
-
-class Preprocessor(object):
-    def __init__(self, config: ConfigPreprocessor) -> None:
-        self.config = config
-        return
-
+class Preprocessor(ABC):
     def yield_data_json(
         self: Preprocessor
     ) -> Generator[Dict, None, None]:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
 import os
+from abc import ABC
 import simplejson as json
 
 
@@ -18,8 +19,8 @@ def _assert_type(val: Any, val_type: Any, offset: int = 0) -> None:
     return
 
 
-class Config(object):
-    def init_param(
+class Config(ABC):
+    def _init_param(
         self: Config,
         config: Dict,
         key: str,
@@ -29,6 +30,8 @@ class Config(object):
     ) -> None:
         val = config.get(key)
         if val is None:
+            if is_require is True:
+                print(key)
             assert(is_require is False)
             val = default
         if val is not None:
@@ -37,7 +40,7 @@ class Config(object):
         return
 
     @staticmethod
-    def load_one(
+    def _load_one(
         config: Dict,
         config_json_one: str,
     ) -> None:
@@ -49,7 +52,7 @@ class Config(object):
         return
 
     @staticmethod
-    def load_two(
+    def _load_two(
         config: Dict,
         config_json_one: str,
         config_json_two: str
@@ -65,12 +68,12 @@ class Config(object):
         config.update(config_two)
         return
 
-    def save(self: Config, config: Dict) -> None:
+    def _save(self: Config, config: Dict) -> None:
         config_json = getattr(self, 'config_json')
         with open(config_json, 'wt') as wf:
             json.dump(config, wf, ensure_ascii=False)
         return
 
-    def save_param(self: Config, config: Dict, key: str) -> None:
+    def _save_param(self: Config, config: Dict, key: str) -> None:
         config[key] = getattr(self, key)
         return

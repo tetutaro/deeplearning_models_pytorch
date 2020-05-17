@@ -5,7 +5,7 @@ from typing import Dict
 import numpy as np
 import torch
 import torch.nn as nn
-from .DeepLearning import ConfigDeepLearning, DeepLearning
+from .DeepLearning import ConfigDeepLearning
 
 INPUT_CHANNELS = ['single', 'multi']
 DEFAULT_INPUT_CHANNEL = 'single'
@@ -33,13 +33,17 @@ class ConfigTextCNN(ConfigDeepLearning):
     ) -> None:
         # model_name
         config['model_name'] = 'TextCNN'
-        # call parent function
-        super().__init__(config, config_model_json)
+        # load json
+        self._load_one(config, config_model_json)
+        # init parent class
+        self._init_deeplearning(config)
         # produce parameters
         config['linear_dim'] = sum([o for f, o in config['kernels']])
         # set parameters
+        for param in self.deeplearning_params:
+            self._init_param(config, *param)
         for param in self.textcnn_params:
-            self.init_param(config, *param)
+            self._init_param(config, *param)
         # set word_vectors
         setattr(self, 'word_vectors', config['word_vectors'])
         # value_assertion
@@ -53,33 +57,36 @@ class ConfigTextCNN(ConfigDeepLearning):
         assert(self.random_state >= 0)
         return
 
-    def load(
-        self: ConfigTextCNN,
-        config_model_json: str
-    ) -> None:
-        # call parent function
-        config = super().load(config_model_json)
+    def load(self: ConfigTextCNN) -> None:
+        # load json
+        config = dict()
+        self._load_one(config, self.config_json)
+        # load parameters for param in self.deeplearning_params:
+        for param in self.deeplearning_params:
+            self._init_param(config, *param)
         for param in self.textcnn_params:
-            self.init_param(config, *param)
+            self._init_param(config, *param)
         return
 
     def save(self: ConfigTextCNN) -> None:
         config = dict()
         # save parameters
+        for name, _, _, _ in self.deeplearning_params:
+            self._save_param(config, name)
         for name, _, _, _ in self.textcnn_params:
-            self.save_param(config, name)
-        # call parent function
-        return super().save(config)
+            self._save_param(config, name)
+        self._save(config)
+        return
 
 
-class TextCNN(DeepLearning):
-    """
-    TextCNN: Convolutinal Neural Networks for text classification
-    https://arxiv.org/abs/1408.5882
-    """
-    def __init__(self: TextCNN, config: ConfigTextCNN) -> None:
+class TextCNN(nn.Module):
+    def __init__(
+        self: TextCNN,
+        config: Dict,
+        config_model_json: str
+    ) -> None:
         super().__init__()
-        self.config = config
+        self.config = ConfigTextCNN(config, config_model_json)
         # set random seed
         if self.config.random_state is not None:
             np.random.seed(self.config.random_state)
@@ -88,14 +95,14 @@ class TextCNN(DeepLearning):
                 torch.cuda.manual_seed(self.config.random_state)
         # Embedding Layer
         in_channels = 1
-        vocab_size = config.word_vectors.shape[0]
-        word_dim = config.word_vectors.shape[1]
+        vocab_size = self.config.word_vectors.shape[0]
+        word_dim = self.config.word_vectors.shape[1]
         embeds = list()
         embed = nn.Embedding(
             vocab_size, word_dim, padding_idx=0
         )
         embed.weight = nn.Parameter(
-            torch.from_numpy(config.word_vectors)
+            torch.from_numpy(self.config.word_vectors)
         )
         embed.weight.requires_grad_(False)
         embeds.append(embed)
@@ -105,7 +112,7 @@ class TextCNN(DeepLearning):
                 vocab_size, word_dim, padding_idx=0
             )
             embed.weight = nn.Parameter(
-                torch.from_numpy(config.word_vectors)
+                torch.from_numpy(self.config.word_vectors)
             )
             embeds.append(embed)
         self.embeds = nn.ModuleList(embeds)
@@ -153,6 +160,7 @@ class TextCNN(DeepLearning):
         return self.smax(self.relu(self.line(self.drop(x))))
 
     def load(self: TextCNN) -> None:
+        self.config.load()
         if torch.cuda.is_available():
             map_location = torch.device('cuda')
         else:
