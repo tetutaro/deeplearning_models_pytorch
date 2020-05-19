@@ -186,3 +186,15 @@ class Tokenizer(Preprocessor, ABC):
         if vocab is None:
             return (surf, None)
         return (surf, vocab.index + 1)
+
+    def _convert_word_ids(
+        self: Tokenizer,
+        words: List[str]
+    ) -> List[int]:
+        word_ids = list()
+        for word in words:
+            vocab = self.kvs.wv.vocab.get(word)
+            if vocab is None:
+                continue
+            word_ids.append(vocab.index + 1)
+        return word_ids

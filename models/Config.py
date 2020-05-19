@@ -30,8 +30,6 @@ class Config(ABC):
     ) -> None:
         val = config.get(key)
         if val is None:
-            if is_require is True:
-                print(key)
             assert(is_require is False)
             val = default
         if val is not None:

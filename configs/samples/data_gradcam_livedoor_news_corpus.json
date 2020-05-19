@@ -1,0 +1,4 @@
+{
+    "data_json": "results/TextCNN_livedoor_news_corpus_test.json",
+    "textcnn_config_data_json": "configs/data_livedoor_news_corpus.json"
+}

@@ -1,0 +1,5 @@
+{
+    "target_model_name": "TextCNN",
+    "target_config_model_json": "configs/model_textcnn.json",
+    "target_layer": null
+}

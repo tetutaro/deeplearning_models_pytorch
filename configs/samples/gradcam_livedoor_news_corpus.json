@@ -1,0 +1,15 @@
+{
+    "config_data_json": "configs/data_gradcam_livedoor_news_corpus.json",
+    "config_preprocessor_json": "configs/tokenizer_textcnn.json",
+    "config_model_json": "configs/model_gradcam_textcnn.json",
+    "config_lightning_json": "configs/lightning.json",
+    "batch_size": 64,
+    "test_rate": 0.0,
+    "fit": false,
+    "refit": false,
+    "predict": true,
+    "output_extension": "json",
+    "output_train": false,
+    "mode": "text",
+    "target_categories": [null]
+}

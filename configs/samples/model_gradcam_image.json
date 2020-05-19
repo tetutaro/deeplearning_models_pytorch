@@ -1,0 +1,5 @@
+{
+    "target_model_name": "resnet152",
+    "target_config_model_json": "dummy",
+    "target_layer": null
+}

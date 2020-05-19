@@ -5,6 +5,7 @@ from typing import Dict, List
 import os
 from operator import itemgetter
 from abc import ABC, abstractmethod
+import simplejson as json
 from sklearn.model_selection import ShuffleSplit
 import torch
 from torch.utils.data import DataLoader, Subset
@@ -134,11 +135,24 @@ class Processor(ABC):
     def _output_resources(
         self: Processor,
         resources: List[Dict],
-        dtype: str
+        output_fname: str
     ) -> None:
-        output_fname = self._get_output_fname(dtype)
         with open(output_fname, 'wt') as wf:
             wf.write('')
+        return
+
+    def _output_json(
+        self: Processor,
+        resources: List[Dict],
+        output_fname: str
+    ) -> None:
+        with open(output_fname, 'wt') as wf:
+            forward_str = "[\n"
+            for res in resources:
+                wf.write(forward_str)
+                json.dump(res, wf, ensure_ascii=False)
+                forward_str = ",\n"
+            wf.write("\n]\n")
         return
 
     def _predict_and_output(self: Processor, dtype: str) -> None:
@@ -163,7 +177,8 @@ class Processor(ABC):
             batch_size=self.config.batch_size, shuffle=False, num_workers=0
         )
         self._predict(dataloader, resources)
-        self._output_resources(resources, dtype)
+        output_fname = self._get_output_fname(dtype)
+        self._output_resources(resources, output_fname)
         return
 
     def process(self: Processor):

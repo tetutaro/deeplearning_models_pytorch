@@ -61,7 +61,7 @@ class ConfigTextCNN(ConfigDeepLearning):
         # load json
         config = dict()
         self._load_one(config, self.config_json)
-        # load parameters for param in self.deeplearning_params:
+        # set parameters
         for param in self.deeplearning_params:
             self._init_param(config, *param)
         for param in self.textcnn_params:

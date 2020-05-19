@@ -1,0 +1,15 @@
+{
+    "config_data_json": "configs/data_sample_images.json",
+    "config_preprocessor_json": "configs/imageloader_gradcam.json",
+    "config_model_json": "configs/model_gradcam_image.json",
+    "config_lightning_json": "configs/lightning.json",
+    "batch_size": 64,
+    "test_rate": 0.0,
+    "fit": false,
+    "refit": false,
+    "predict": true,
+    "output_extension": "png",
+    "output_train": false,
+    "mode": "image",
+    "target_categories": ["bull_mastiff", "Egyptian_cat"]
+}
