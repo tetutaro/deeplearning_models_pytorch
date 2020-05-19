@@ -68,7 +68,7 @@ class ProcessorTextCNN(Processor):
         for res, cat, prob in zip(
             resources, pred_cats, pred_probs
         ):
-            res['predicted_cateogry'] = cat
+            res['predicted_category'] = cat
             res['probability'] = "%.6f" % prob
         return
 
