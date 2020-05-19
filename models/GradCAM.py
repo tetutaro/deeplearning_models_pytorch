@@ -6,7 +6,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models
+from torchvision.models.resnet import model_urls, Bottleneck, ResNet
+from torch.hub import load_state_dict_from_url
 from .DeepLearning import ConfigDeepLearning
 from .TextCNN import TextCNN
 
@@ -37,9 +38,19 @@ class ConfigGradCAM(ConfigDeepLearning):
         # value assertion
         assert(self.mode in GRADCAM_MODES)
         # load target model of GradCAM
+        if torch.cuda.is_available():
+            map_location = torch.device('cuda')
+        else:
+            map_location = torch.device('cpu')
         if self.mode == 'image':
             if self.target_model_name == 'resnet152':
-                self.model = models.resnet152(pretrained=True)
+                self.model = ResNet(Bottleneck, [3, 8, 36, 3])
+                state_dict = load_state_dict_from_url(
+                    model_urls['resnet152'],
+                    map_location=map_location,
+                    progress=True
+                )
+                self.model.load_state_dict(state_dict)
             else:
                 # not implemented
                 assert(False)
@@ -54,6 +65,7 @@ class ConfigGradCAM(ConfigDeepLearning):
                 assert(False)
             self.model.load()
         self.model.eval()
+        self.model.to(map_location)
         return
 
     def load(self: ConfigGradCAM) -> None:
