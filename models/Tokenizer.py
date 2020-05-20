@@ -5,15 +5,18 @@ from typing import Dict, List, Tuple, Optional, Generator
 import os
 from abc import ABC
 import subprocess
+import simplejson as json
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from MeCab import Tagger
 from gensim.models.keyedvectors import KeyedVectors
 from mojimoji import han_to_zen
+from transformers import BertTokenizer
 from .Preprocessor import ConfigPreprocessor, Preprocessor
 
 DICTIONARIES = ['ipa', 'juman', 'neologd']
 DEFAULT_CHOPPING_WORDS = ["\u3000", " "]
+DEFAULT_SEPARATE_WORDS = ["。", "？", "！"]
 DEFAULT_EXTRACT_SPEECHES = ["名詞"]
 DEFAULT_IS_WAKATI = False
 DEFAULT_USE_ORIGINAL = False
@@ -23,8 +26,10 @@ class ConfigTokenizer(ConfigPreprocessor, ABC):
     tokenizer_params = [
         # name, vtype, is_require, default
         ('dictionary_name', str, True, None),
-        ('keyedvector_bin', str, True, None),
+        ('keyedvector_bin', str, False, ''),
+        ('nict_bert_dir', str, False, ''),
         ('chopping_words', [list, str], False, DEFAULT_CHOPPING_WORDS),
+        ('separate_words', [list, str], False, DEFAULT_SEPARATE_WORDS),
         ('extract_speeches', [list, str], False, DEFAULT_EXTRACT_SPEECHES),
         ('is_wakati', bool, False, DEFAULT_IS_WAKATI),
         ('use_original', bool, False, DEFAULT_USE_ORIGINAL),
@@ -38,7 +43,6 @@ class ConfigTokenizer(ConfigPreprocessor, ABC):
     ) -> None:
         # value assertion
         assert(config['dictionary_name'] in DICTIONARIES)
-        assert(os.path.exists(config['keyedvector_bin']))
         return
 
     def save_categories(
@@ -92,6 +96,7 @@ class Tokenizer(Preprocessor, ABC):
         return
 
     def _load_keyedvectors(self: Tokenizer) -> None:
+        assert(os.path.exists(self.config['keyedvector_bin']))
         # load KeyedVectors
         self.kvs = KeyedVectors.load_word2vec_format(
             self.config.keyedvector_bin, binary=True
@@ -104,6 +109,22 @@ class Tokenizer(Preprocessor, ABC):
         setattr(self, 'word_vectors', word_vectors)
         return
 
+    def _load_bert_tokenizer(self: Tokenizer) -> None:
+        tokenizer_config_json = os.path.join(
+            self.config.nict_bert_dir, 'tokenizer_config.json'
+        )
+        tokenizer_vocab_path = os.path.join(
+            self.config.nict_bert_dir, 'vocab.txt'
+        )
+        assert(os.path.exists(tokenizer_config_json))
+        assert(os.path.exists(tokenizer_vocab_path))
+        with open(tokenizer_config_json, 'rt') as rf:
+            tokenizer_config = json.load(rf)
+        self.tokenizer = BertTokenizer(
+            tokenizer_vocab_path, **tokenizer_config
+        )
+        return
+
     def _cleaning_text(self: Tokenizer, text: str) -> str:
         text = han_to_zen(text)
         for chopping_word in self.config.chopping_words:
@@ -113,12 +134,13 @@ class Tokenizer(Preprocessor, ABC):
     def _padding_list(
         self: Tokenizer,
         data: List[List[int]],
+        padding_id: int,
         max_word_len: Optional(int)
     ) -> Tuple[int, List[List[int]]]:
         if max_word_len is None:
             max_word_len = max(len(d) for d in data)
         ret = [
-            d + [0] * (max_word_len - len(d))
+            d + [padding_id] * (max_word_len - len(d))
             for d in data
         ]
         return max_word_len, ret
@@ -141,11 +163,6 @@ class Tokenizer(Preprocessor, ABC):
             self.config.save_categories(le.classes_.tolist())
             label_list = le.transform(cats).tolist()
         return label_list
-
-    # usage of MeCab (when is_wakati is True)
-    def _get_words(self: Tokenizer, text: str) -> List[str]:
-        assert(self.cnfig.is_wakati is True)
-        return self.tagger.parse(text).strip().split(' ')
 
     # usage of MeCab (when is_wakati is False)
     def _yield_parsed_node(
@@ -198,3 +215,36 @@ class Tokenizer(Preprocessor, ABC):
                 continue
             word_ids.append(vocab.index + 1)
         return word_ids
+
+    # usage of MeCab (when is_wakati is True)
+    def _split_words(self: Tokenizer, text: str) -> List[str]:
+        assert(self.config.is_wakati is True)
+        return self.tagger.parse(text).strip().split(' ')
+
+    def _split_sentences(
+        self: Tokenizer,
+        texts: List[str],
+        sep: str
+    ) -> List[str]:
+        rets = list()
+        for t in texts:
+            ts = t.split(sep)
+            if len(ts) > 1:
+                for i in range(len(ts)):
+                    ts[i] += sep
+            if ts[-1] == '':
+                ts = ts[:-1]
+            rets.extend(ts)
+        return rets
+
+    def _split_sentence_words(
+        self: Tokenizer,
+        text: str
+    ) -> List[List[str]]:
+        texts = [text]
+        for sep in self.config.separate_words:
+            texts = self._split_sentences(texts, sep)
+        sentences = list()
+        for sentence in texts:
+            sentence.append(self._split_words(sentence))
+        return sentences

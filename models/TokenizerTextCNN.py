@@ -151,7 +151,7 @@ class TokenizerTextCNN(Tokenizer):
         # produce labels by encoding categories
         label_list = self._encode_categories(category_list)
         word_len, word_ids_list = self._padding_list(
-            word_ids_list, None
+            word_ids_list, 0, None
         )
         if not is_encoded:
             self.config._save_word_len(word_len)

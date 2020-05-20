@@ -136,7 +136,7 @@ class TokenizerGradCAM(Tokenizer):
         # produce labels by encoding categories
         label_list = self._encode_categories(category_list)
         _, word_ids_list = self._padding_list(
-            word_ids_list, self.config.word_len
+            word_ids_list, 0, self.config.word_len
         )
         word_ids_list = torch.tensor(word_ids_list).long()
         label_list = torch.tensor(label_list)

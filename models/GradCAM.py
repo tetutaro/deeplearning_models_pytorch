@@ -37,35 +37,6 @@ class ConfigGradCAM(ConfigDeepLearning):
             self._init_param(config, *param)
         # value assertion
         assert(self.mode in GRADCAM_MODES)
-        # load target model of GradCAM
-        if torch.cuda.is_available():
-            map_location = torch.device('cuda')
-        else:
-            map_location = torch.device('cpu')
-        if self.mode == 'image':
-            if self.target_model_name == 'resnet152':
-                self.model = ResNet(Bottleneck, [3, 8, 36, 3])
-                state_dict = load_state_dict_from_url(
-                    model_urls['resnet152'],
-                    map_location=map_location,
-                    progress=True
-                )
-                self.model.load_state_dict(state_dict)
-            else:
-                # not implemented
-                assert(False)
-        else:  # self.mode == 'text'
-            if self.target_model_name == 'TextCNN':
-                self.model = TextCNN(
-                    config,
-                    self.target_config_model_json
-                )
-            else:
-                # not implemented
-                assert(False)
-            self.model.load()
-        self.model.eval()
-        self.model.to(map_location)
         return
 
     def load(self: ConfigGradCAM) -> None:
@@ -88,6 +59,35 @@ class GradCAM(nn.Module):
         self.fmap_cache = dict()
         self.grad_cache = dict()
         self.handlers = list()
+        # load target model of GradCAM
+        if torch.cuda.is_available():
+            map_location = torch.device('cuda')
+        else:
+            map_location = torch.device('cpu')
+        if self.config.mode == 'image':
+            if self.config.target_model_name == 'resnet152':
+                self.model = ResNet(Bottleneck, [3, 8, 36, 3])
+                state_dict = load_state_dict_from_url(
+                    model_urls['resnet152'],
+                    map_location=map_location,
+                    progress=True
+                )
+                self.model.load_state_dict(state_dict)
+            else:
+                # not implemented
+                assert(False)
+        else:  # self.mode == 'text'
+            if self.config.target_model_name == 'TextCNN':
+                self.model = TextCNN(
+                    config,
+                    self.config.target_config_model_json
+                )
+            else:
+                # not implemented
+                assert(False)
+            self.model.load()
+        self.model.eval()
+        self.model.to(map_location)
         return
 
     def _add_hook(self: GradCAM):
@@ -114,7 +114,7 @@ class GradCAM(nn.Module):
             return backward_hook
 
         # register above hook functions to the target layers
-        for name, module in self.config.model.named_modules():
+        for name, module in self.model.named_modules():
             if name == '':
                 continue
             if not module._get_name().startswith("Conv"):
@@ -189,7 +189,7 @@ class GradCAM(nn.Module):
             inter_shape = tuple(orig_shape[2:])
             final_shape = tuple([orig_shape[0]] + orig_shape[2:])
         # forward propagation (store forward activation mappings)
-        logits = self.config.model(x.requires_grad_(False))
+        logits = self.model(x.requires_grad_(False))
         probs = F.softmax(logits, dim=1)
         sorted_probs, ids = probs.sort(dim=1, descending=True)
         # create predicted class if that is not given
@@ -216,7 +216,7 @@ class GradCAM(nn.Module):
             device = torch.device('cpu')
         one_hot = one_hot.to(device)
         # backward propagation (store gradients)
-        self.config.model.zero_grad()
+        self.model.zero_grad()
         logits.backward(gradient=one_hot, retain_graph=True)
         # get GradCAM of each target layer
         gcams = list()

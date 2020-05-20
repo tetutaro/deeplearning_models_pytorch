@@ -1,0 +1,13 @@
+{
+    "config_data_json": "configs/data_livedoor_news_corpus.json",
+    "config_preprocessor_json": "configs/tokenizer_bert_classification.json",
+    "config_model_json": "configs/model_bert_classification.json",
+    "config_lightning_json": "configs/lightning_bert.json",
+    "batch_size": 64,
+    "test_rate": 0.1,
+    "fit": true,
+    "refit": false,
+    "predict": true,
+    "output_extension": "json",
+    "output_train": false
+}
