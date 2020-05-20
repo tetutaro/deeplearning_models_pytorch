@@ -39,7 +39,6 @@ class ConfigBertClassification(ConfigDeepLearning):
             self._init_param(config, *param)
         # value_assertion
         assert(os.path.exists(self.nict_bert_dir))
-        assert(self.random_state >= 0)
         return
 
     def load(self: ConfigBertClassification) -> None:

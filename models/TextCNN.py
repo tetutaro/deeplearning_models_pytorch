@@ -54,7 +54,6 @@ class ConfigTextCNN(ConfigDeepLearning):
         assert(self.input_channel in INPUT_CHANNELS)
         assert(self.linear_dim > self.num_class)
         assert((self.drop_prob >= 0) and (self.drop_prob < 1))
-        assert(self.random_state >= 0)
         return
 
     def load(self: ConfigTextCNN) -> None:
