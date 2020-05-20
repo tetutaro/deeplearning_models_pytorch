@@ -159,14 +159,14 @@ class TokenizerTextCNN(Tokenizer):
             word_ids_list, label_list
         )
         # summarize original data
-        documents = list()
+        resources = list()
         for o, s, c in zip(
             original_list, spanned_list, category_list
         ):
-            documents.append({
+            resources.append({
                 'document': o, 'spanned': s, 'category': c
             })
-        return dataset, documents
+        return dataset, resources
 
     def _preprocess_each_document(
         self: TokenizerTextCNN,

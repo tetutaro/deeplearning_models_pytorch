@@ -144,17 +144,17 @@ class TokenizerGradCAM(Tokenizer):
             word_ids_list, label_list
         )
         # summarize original data
-        documents = list()
+        resources = list()
         for o, s, c, pred, prob in zip(
             document_list, spanned_list, category_list,
             predicted_category_list, probability_list
         ):
-            documents.append({
+            resources.append({
                 'document': o, 'spanned': s, 'category': c,
                 'predicted_category': pred,
                 'probability': prob,
             })
-        return dataset, documents
+        return dataset, resources
 
     def _preprocess_each_document(
         self: TokenizerGradCAM,

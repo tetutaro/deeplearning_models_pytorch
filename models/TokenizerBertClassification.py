@@ -123,12 +123,12 @@ class TokenizerBertClassification(Tokenizer):
             input_ids, token_type_ids, attention_mask, label_list
         )
         # summarize original data
-        documents = list()
+        resources = list()
         for o, p, c in zip(original_list, parsed_list, category_list):
-            documents.append({
+            resources.append({
                 'document': o, 'parsed': p, 'category': c
             })
-        return dataset, documents
+        return dataset, resources
 
     def _preprocess_each_document(
         self: TokenizerBertClassification,
