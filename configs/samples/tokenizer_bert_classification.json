@@ -1,6 +1,6 @@
 {
     "min_word_len": 3,
-    "max_word_len": 512,
+    "max_word_len": 510,
     "min_sentences": 3,
     "max_sentences": 100,
     "nict_bert_dir": "binaries/NICT_BERT-base_JapaneseWikipedia_100K",
