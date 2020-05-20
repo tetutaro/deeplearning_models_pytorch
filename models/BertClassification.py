@@ -85,7 +85,7 @@ class BertClassification(nn.Module):
             state_dict=state_dict,
             from_tf=False
         )
-        # disable training (changing its weights when backword) of all bert layers
+        # disable training (changing its weights) of all bert layers
         for name, param in self.model.bert.named_parameters():
             param.requires_grad_(False)
         return
@@ -118,7 +118,7 @@ class BertClassification(nn.Module):
             state_dict=state_dict,
             from_tf=False
         )
-        # disable training (changing its weights when backword) of all bert layers
+        # disable training (changing its weights) of all bert layers
         for name, param in self.model.bert.named_parameters():
             param.requires_grad_(False)
         return
