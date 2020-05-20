@@ -96,7 +96,7 @@ class Tokenizer(Preprocessor, ABC):
         return
 
     def _load_keyedvectors(self: Tokenizer) -> None:
-        assert(os.path.exists(self.config['keyedvector_bin']))
+        assert(os.path.exists(self.config.keyedvector_bin))
         # load KeyedVectors
         self.kvs = KeyedVectors.load_word2vec_format(
             self.config.keyedvector_bin, binary=True
