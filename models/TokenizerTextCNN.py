@@ -140,8 +140,6 @@ class TokenizerTextCNN(Tokenizer):
             preprocessed = self._preprocess_each_document(
                 document, max_word_len
             )
-            if len(preprocessed) == 0:
-                continue
             if len(preprocessed['word_ids']) < self.config.min_word_len:
                 continue
             original_list.append(preprocessed['original'])

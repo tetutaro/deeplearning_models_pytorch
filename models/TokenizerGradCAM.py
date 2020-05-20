@@ -124,10 +124,10 @@ class TokenizerGradCAM(Tokenizer):
                 continue
             if category is None:
                 category = ''
-            preprocessed = self._preprocess_each_document(spanned)
-            if len(preprocessed) == 0:
+            word_ids = self._preprocess_each_document(spanned)
+            if len(word_ids) == 0:
                 continue
-            word_ids_list.append(preprocessed['word_ids'])
+            word_ids_list.append(word_ids)
             document_list.append(document)
             spanned_list.append(spanned)
             category_list.append(category)
@@ -159,10 +159,7 @@ class TokenizerGradCAM(Tokenizer):
     def _preprocess_each_document(
         self: TokenizerGradCAM,
         spanned: str
-    ) -> Dict:
+    ) -> List[str]:
         self.parser.feed(spanned)
         words = self.parser.get_words()
-        word_ids = self._convert_word_ids(words)
-        return {
-            'word_ids': word_ids,
-        }
+        return self._convert_word_ids(words)
