@@ -246,5 +246,5 @@ class Tokenizer(Preprocessor, ABC):
             texts = self._split_sentences(texts, sep)
         sentences = list()
         for sentence in texts:
-            sentence.append(self._split_words(sentence))
+            sentences.append(self._split_words(sentence))
         return sentences

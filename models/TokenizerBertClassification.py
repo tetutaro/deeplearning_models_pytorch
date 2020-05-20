@@ -14,7 +14,7 @@ DEFAULT_MAX_SENTENCES = 100
 
 
 class ConfigTokenizerBertClassification(ConfigTokenizer):
-    tokenizer_textcnn_params = [
+    tokenizer_bert_classification_params = [
         # name, vtype, is_require, default
         ('model_name', str, True, None),
         ('document_column', str, True, None),
@@ -43,7 +43,7 @@ class ConfigTokenizerBertClassification(ConfigTokenizer):
             self._init_param(config, *param)
         for param in self.tokenizer_params:
             self._init_param(config, *param)
-        for param in self.tokenizer_textcnn_params:
+        for param in self.tokenizer_bert_classification_params:
             self._init_param(config, *param)
         # value assertion
         assert((
@@ -112,7 +112,8 @@ class TokenizerBertClassification(Tokenizer):
         label_list = self._encode_categories(category_list)
         encs = self.tokenizer.batch_encode_plus(
             parsed_list,
-            max_length=self.max_word_len+2, pad_to_max_length=True
+            max_length=self.config.max_word_len+2,
+            pad_to_max_length=True
         )
         input_ids = torch.tensor(encs['input_ids']).long()
         token_type_ids = torch.tensor(encs['token_type_ids']).float()
@@ -141,7 +142,7 @@ class TokenizerBertClassification(Tokenizer):
             s for s in document_sentences
             if len(s) > self.config.min_word_len
         ]
-        if len(document_sentences) < self.min_sentences:
+        if len(document_sentences) < self.config.min_sentences:
             return None
         document_sentences = document_sentences[:self.config.max_sentences]
         document_words = list()

@@ -65,10 +65,10 @@ class BertClassification(nn.Module):
                 torch.cuda.manual_seed(self.config.random_state)
         # load BertForSequenceClassification of NICT BERT
         bert_config = BertConfig.from_pretrained(
-            os.path.join(self.config.nict_bert_dir, 'config_json')
+            os.path.join(self.config.nict_bert_dir, 'config.json')
         )
-        id2label = {i: x for i, x in enumerate(self.unique_categories)}
-        label2id = {x: i for i, x in enumerate(self.unique_categories)}
+        id2label = {i: x for i, x in enumerate(self.config.unique_categories)}
+        label2id = {x: i for i, x in enumerate(self.config.unique_categories)}
         bert_config.update({'num_labels': self.config.num_class})
         bert_config.update({'id2label': id2label, 'label2id': label2id})
         if torch.cuda.is_available():
@@ -76,7 +76,7 @@ class BertClassification(nn.Module):
         else:
             map_location = torch.device('cpu')
         state_dict = torch.load(
-            os.path.join(self.config.nict_bert_dir, 'config.json'),
+            os.path.join(self.config.nict_bert_dir, 'pytorch_model.bin'),
             map_location=map_location
         )
         self.model = BertForSequenceClassification.from_pretrained(
@@ -85,6 +85,9 @@ class BertClassification(nn.Module):
             state_dict=state_dict,
             from_tf=False
         )
+        # disable training (changing its weights when backword) of all bert layers
+        for name, param in self.model.bert.named_parameters():
+            param.requires_grad_(False)
         return
 
     def forward(
@@ -115,8 +118,19 @@ class BertClassification(nn.Module):
             state_dict=state_dict,
             from_tf=False
         )
+        # disable training (changing its weights when backword) of all bert layers
+        for name, param in self.model.bert.named_parameters():
+            param.requires_grad_(False)
         return
 
     def save(self: BertClassification) -> None:
         self.model.save_pretrained(self.config.base_dir)
+        return
+
+    def train(self: BertClassification, mode: bool) -> None:
+        self.model.train(mode)
+        return
+
+    def eval(self: BertClassification) -> None:
+        self.model.eval()
         return
