@@ -64,13 +64,13 @@ class ProcessorBertClassification(Processor):
         pred_probs = list()
         for batch in dataloader:
             with torch.no_grad():
-                _, logit = self.model(
-                    input_ids=batch[0].to(self.device),
-                    attension_mask=batch[1].to(self.device),
-                    token_type_ids=batch[2].to(self.device),
-                    labels=batch[3].to(self.device),
-                )
-            probs = F.softmax(logit, dim=1).cpu().detach().num()
+                _, logit = self.model.forward((
+                    batch[0].to(self.device),
+                    batch[1].to(self.device),
+                    batch[2].to(self.device),
+                    batch[3].to(self.device)
+                ))
+            probs = F.softmax(logit, dim=1).cpu().detach().numpy()
             label2cat = self.unique_categories
             pred_prob = np.max(probs, axis=1).tolist()
             pred_label = np.argmax(probs, axis=1).tolist()
