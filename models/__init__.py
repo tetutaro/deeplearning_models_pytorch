@@ -3,8 +3,9 @@
 from .ProcessorTextCNN import ProcessorTextCNN
 from .ProcessorGradCAM import ProcessorGradCAM
 from .ProcessorBertClassification import ProcessorBertClassification
+from .ProcessorBertSum import ProcessorBertSum
 
 __all__ = [
     ProcessorTextCNN, ProcessorGradCAM,
-    ProcessorBertClassification
+    ProcessorBertClassification, ProcessorBertSum,
 ]

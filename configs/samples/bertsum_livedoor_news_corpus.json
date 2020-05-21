@@ -1,0 +1,14 @@
+{
+    "config_data_json": "configs/data_bertsum_livedoor_news_corpus.json",
+    "config_preprocessor_json": "configs/tokenizer_bertsum.json",
+    "config_model_json": "configs/model_bertsum.json",
+    "config_lightning_json": "configs/lightning_bert.json",
+    "num_select_sentences": 3,
+    "batch_size": 64,
+    "test_rate": 0.1,
+    "fit": true,
+    "refit": false,
+    "predict": true,
+    "output_extension": "json",
+    "output_train": false
+}
