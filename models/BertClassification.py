@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict, Tuple
+from typing import Dict
 import os
 import numpy as np
 import torch
@@ -91,13 +91,16 @@ class BertClassification(nn.Module):
 
     def forward(
         self: BertClassification,
-        x: Tuple[torch.Tensor]
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: torch.Tensor,
+        labels: torch.Tensor
     ) -> torch.Tensor:
         return self.model.forward(
-            input_ids=x[0],
-            attention_mask=x[1],
-            token_type_ids=x[2],
-            labels=x[3]
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            labels=labels
         )
 
     def load(self: BertClassification) -> None:

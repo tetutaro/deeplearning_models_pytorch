@@ -45,15 +45,31 @@ class LightningBertClassification(Lightning):
         self._init_lightinig(dataset)
         return None
 
-    def forward(self: LightningBertClassification, x: Tuple[torch.Tensor]):
-        return self.model.forward(x)
+    def forward(
+        self: LightningBertClassification,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: torch.Tensor,
+        labels: torch.Tensor
+    ) -> Tuple[torch.Tensor]:
+        return self.model.forward(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            labels=labels
+        )
 
     def training_step(
         self: LightningBertClassification,
         batch: Tuple[torch.Tensor],
         batch_index: int
     ) -> Dict:
-        output = self.forward(batch)
+        output = self.forward(
+            input_ids=batch[0],
+            attention_mask=batch[1],
+            token_type_ids=batch[2],
+            labels=batch[3]
+        )
         loss = output[0]
         logit = output[1]
         labels = batch[3]
@@ -97,7 +113,12 @@ class LightningBertClassification(Lightning):
         batch: Tuple[torch.Tensor],
         batch_index: int
     ) -> Dict:
-        output = self.forward(batch)
+        output = self.forward(
+            input_ids=batch[0],
+            attention_mask=batch[1],
+            token_type_ids=batch[2],
+            labels=batch[3]
+        )
         loss = output[0]
         logit = output[1]
         labels = batch[3]
