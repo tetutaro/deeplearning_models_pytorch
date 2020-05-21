@@ -161,7 +161,7 @@ class TokenizerBertSum(Tokenizer):
         preprocessed_list = list()
         for data in self.yield_data_json():
             document = data.get(self.config.document_column)
-            abstruct = data.get(self.config.category_column)
+            abstruct = data.get(self.config.abstruct_column)
             if document is None:
                 continue
             preprocessed = self._preprocess_each_document(
@@ -186,16 +186,16 @@ class TokenizerBertSum(Tokenizer):
         input_ids = torch.tensor(encs['input_ids']).long()
         attention_mask = torch.tensor(encs['attention_mask']).long()
         segment_ids = torch.tensor(
-            self._padding_list(segment_ids_list, 0)[1]
+            self._padding_list(segment_ids_list, 0, None)[1]
         ).long()
-        cls_ids = self._padding_list(cls_ids_list, -1)[1]
+        cls_ids = self._padding_list(cls_ids_list, -1, None)[1]
         cls_ids_mask = [[0 if c == -1 else 1 for c in cs] for cs in cls_ids]
         cls_ids = torch.tensor(cls_ids)
         cls_ids_mask_bool = ~(cls_ids == -1)
         cls_ids[cls_ids == -1] = 0
         cls_ids_mask = torch.tensor(cls_ids_mask).float()
         labels = torch.tensor(
-            self._padding_list(labels_list, 0)[1]
+            self._padding_list(labels_list, 0, None)[1]
         ).float()
         dataset = TensorDataset(
             input_ids, attention_mask, segment_ids,
@@ -258,13 +258,17 @@ class TokenizerBertSum(Tokenizer):
                 self._cleaning_text(abstruct)
             )
             oracle_ids = get_oracle_ids(
-                document_sentences, abstruct_words, self.min_sentences
+                document_sentences, abstruct_words,
+                self.config.min_sentences
             )
             labels = [0] * len(document_sentences)
             for l in oracle_ids:
                 labels[l] = 1
         else:
             labels = [0] * len(document_sentences)
+        num_sentences = len(cls_ids)
+        sentences = sentences[:num_sentences]
+        labels = labels[:num_sentences]
         return {
             'original': original,
             'sentences': sentences,

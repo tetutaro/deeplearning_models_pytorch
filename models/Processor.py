@@ -196,7 +196,7 @@ class Processor(ABC):
         if not self.config.predict:
             return
         self._reload_model()
-        if self.config.fit:
+        if self.config.fit and self.config.test_rate > 0:
             if self.config.output_train:
                 self._predict_and_output("train")
             self._predict_and_output("test")

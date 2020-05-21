@@ -65,7 +65,7 @@ class ProcessorBertClassification(Processor):
         for batch in dataloader:
             with torch.no_grad():
                 _, logit = self.model.forward(
-                    iput_ids=batch[0].to(self.device),
+                    input_ids=batch[0].to(self.device),
                     attention_mask=batch[1].to(self.device),
                     token_type_ids=batch[2].to(self.device),
                     labels=batch[3].to(self.device)
