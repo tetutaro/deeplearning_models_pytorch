@@ -161,8 +161,10 @@ def write_columns(html_dir: str) -> None:
 
 @click.command()
 @click.option('--input-json', '-i', type=str, required=True)
-@click.option('--www-path', '-w', type=str, required=True)
-def main(input_json: str, www_path: str) -> None:
+def main(input_json: str) -> None:
+    www_path = os.path.splitext(
+        os.path.basename(input_json)
+    )[0]
     html_dir = os.path.join('/usr/local/var/www', www_path)
     os.makedirs(html_dir, exist_ok=True)
     with open(os.path.join(html_dir, 'popup.css'), 'wt') as wf:

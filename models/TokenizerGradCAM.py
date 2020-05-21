@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 from typing import Dict, List, Tuple
+import os
 from html.parser import HTMLParser
 import torch
 from torch.utils.data import TensorDataset
@@ -13,11 +14,11 @@ class ConfigTokenizerGradCAM(ConfigTokenizer):
     tokenizer_gradcam_params = [
         # name, vtype, is_require, default
         ('model_name', str, True, None),
+        ('data_name', str, True, None),
         ('data_json', str, True, None),
         ('textcnn_config_data_json', str, True, None),
     ]
     textcnn_takeover_params = [
-        'data_name',
         'base_dir',
         'keyedvector_bin',
         'num_class',
@@ -34,6 +35,10 @@ class ConfigTokenizerGradCAM(ConfigTokenizer):
         config = dict()
         config['model_name'] = 'GradCAM'
         self._load_one(config, config_data_json)
+        # produce paramter
+        config['data_name'] = os.path.splitext(
+            os.path.basename(config['data_json'])
+        )[0]
         # set parameters
         for param in self.tokenizer_gradcam_params:
             self._init_param(config, *param)
