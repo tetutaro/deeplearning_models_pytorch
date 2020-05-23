@@ -1,0 +1,14 @@
+pytorch_lightning
+mojimoji
+click
+gensim
+pandas
+transformers
+opencv_python
+torch
+simplejson
+torchvision
+matplotlib
+numpy
+MeCab
+scikit_learn
