@@ -46,7 +46,7 @@ the pretrained [BERT](https://arxiv.org/abs/1810.04805) model that handles Japan
 ## Structure of this repository
 
 - every deeplearning model has 4 parts
-    - Preprocessor: Tokenizer of ImageLoader
+    - Preprocessor: Tokenizer or ImageLoader
     - Model itself
     - Trainer: PyTorch Lightning
     - Processor: organize preprocessing and training, and predict and output the result

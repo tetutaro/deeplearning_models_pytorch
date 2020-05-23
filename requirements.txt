@@ -10,5 +10,5 @@ simplejson
 torchvision
 matplotlib
 numpy
-MeCab
+mecab_python3
 scikit_learn
