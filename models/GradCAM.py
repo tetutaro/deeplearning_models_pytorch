@@ -135,7 +135,7 @@ class GradCAM(nn.Module):
         assert(len(self.target_layer_names) > 0)
         return
 
-    def _remove_hook(self: GradCAM):
+    def _remove_hook(self: GradCAM) -> None:
         for handler in self.handlers:
             handler.remove()
         self.handlers = list()
@@ -171,7 +171,7 @@ class GradCAM(nn.Module):
         )
 
     def __call__(
-        self,
+        self: GradCAM,
         x: torch.Tensor,
         pred: Optional[np.array]
     ) -> Dict:
