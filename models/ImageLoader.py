@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, Callable
 import os
 from abc import ABC
 from glob import glob
-import cv2
+import numpy as np
+from PIL import Image
 import torch
 from torchvision import transforms
 from torch.utils.data import TensorDataset
@@ -16,9 +17,7 @@ class ConfigImageLoader(ConfigPreprocessor, ABC):
     imageloader_params = [
         # name, vtype, is_require, default
         ('image_dir', str, True, None),
-        ('categories_path', str, True, None),
-        ('num_class', int, False, 0),
-        ('unique_categories', [list, str], False, []),
+        ('extensions', [list, str], True, None),
     ]
 
     def _init_imageloader(
@@ -32,44 +31,160 @@ class ConfigImageLoader(ConfigPreprocessor, ABC):
             self.image_dir = self.image_dir[:-1]
         # value assertion
         assert(os.path.exists(self.image_dir))
-        assert(os.path.exists(self.categories_path))
         # internal parameters
         self.data_name = self.image_dir.split(os.sep)[-1]
-        unique_categories = list()
-        with open(self.categories_path, 'rt') as rf:
-            line = rf.readline()
-            while line:
-                unique_categories.append(line.strip())
-                line = rf.readline()
-        self.unique_categories = unique_categories
-        self.num_class = len(unique_categories)
         return
+
+
+class ImageDataset(TensorDataset):
+    def __init__(
+        self: ImageDataset,
+        base_dir: str,
+        image_dirs: Optional[List[str]],
+        extensions: List[str],
+        shuffle: bool,
+        transform: Optional[Callable],
+        preload: bool
+    ) -> None:
+        super().__init__()
+        search_dirs = list()
+        if image_dirs is None:
+            search_dirs.append(base_dir)
+        else:
+            for d in image_dirs:
+                search_dirs.append(os.path.join(base_dir, d))
+        image_paths = list()
+        for d in search_dirs:
+            for e in extensions:
+                for image_path in glob(
+                    os.path.join(d, '*.' + e)
+                ):
+                    image_paths.append(image_path)
+        self.image_paths = sorted(image_paths)
+        self.fnames = [
+            os.path.splitext(
+                os.path.basename(p)
+            )[0] for p in self.image_paths
+        ]
+        self.shuffle = shuffle
+        self.transform = transform
+        self.preload = preload
+        if preload:
+            self.raws = list()
+            self.imgs = list()
+            for p in self.image_paths:
+                raw = Image.open(p).convert('RGB')
+                if self.transform is None:
+                    img = transforms.ToTensor()(raw.copy())
+                else:
+                    img = self.transform(raw.copy())
+                self.raws.append(np.array(raw, dtype=np.uint8)[..., ::-1])
+                self.imgs.append(img)
+        return
+
+    def __getitem__(
+        self: ImageDataset,
+        index: int
+    ) -> torch.Tensor:
+        if self.shuffle:
+            idx = np.random.randint(0, len(self.image_paths))
+        else:
+            idx = index % len(self.image_paths)
+        if self.preload:
+            return self.imgs[idx]
+        image_path = self.image_paths[idx]
+        raw = Image.open(image_path).convert('RGB')
+        if self.transform is None:
+            img = transforms.ToTensor()(raw.copy())
+        else:
+            img = self.transform(raw.copy())
+        return img
+
+    def __len__(self: ImageDataset) -> int:
+        return len(self.image_paths)
+
+
+class TwoImageDataset(TensorDataset):
+    def __init__(
+        self: TwoImageDataset,
+        base_dir: str,
+        image_dirs: List[List[str]],
+        extension: str,
+        shuffles: List[bool],
+        transform: Optional[Callable],
+        preload: bool
+    ) -> None:
+        self.datasetA = ImageDataset(
+            base_dir=base_dir,
+            image_dirs=image_dirs[0],
+            extension=extension,
+            shuffle=shuffles[0],
+            transform=transform,
+            preload=preload
+        )
+        self.datasetB = ImageDataset(
+            base_dir=base_dir,
+            image_dirs=image_dirs[1],
+            extension=extension,
+            shuffle=shuffles[1],
+            transform=transform,
+            preload=preload
+        )
+        return
+
+    def __getitem__(
+        self: TwoImageDataset,
+        index: int
+    ) -> Tuple[torch.Tensor]:
+        return tuple(
+            self.datasetA.__getitem__(index),
+            self.datasetB.__getitem__(index)
+        )
+
+    def __len__(self: TwoImageDataset) -> int:
+        return max(
+            self.datasetA.__len__(),
+            self.datasetB.__len__()
+        )
 
 
 class ImageLoader(Preprocessor, ABC):
     def load_image(
-        self: ImageLoader
-    ) -> Tuple[TensorDataset, List[Dict]]:
-        resources = list()
-        images = list()
-        for fname in glob(
-            os.path.join(self.config.image_dir, "*.png")
-        ):
-            raw = cv2.imread(fname)
-            raw = cv2.resize(raw, (224,) * 2)
-            img = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225]
-                )
-            ])(raw[..., ::-1].copy())
-            images.append(torch.unsqueeze(img, 0))
-            resources.append({
-                "name": os.path.splitext(
-                    os.path.basename(fname)
-                )[0],
-                "raw": raw,
-            })
-        cated_images = torch.cat(images, dim=0)
-        return TensorDataset(cated_images), resources
+        self: ImageLoader,
+        transform: Optional[Callable],
+    ) -> Tuple[ImageDataset, List[Dict]]:
+        dataset = ImageDataset(
+            base_dir=self.config.image_dir,
+            image_dirs=None,
+            extensions=self.config.extensions,
+            shuffle=False,
+            transform=transform,
+            preload=True
+        )
+        resources = [
+            {"name": n, "raw": r} for n, r in zip(
+                dataset.fnames, dataset.raws
+            )
+        ]
+        return dataset, resources
+
+    def create_ABdataset(
+        self: ImageLoader,
+        image_dirs: List[List[str]],
+        shuffles: List[bool],
+        transform: Optional[Callable],
+        preload: bool
+    ) -> Tuple[TwoImageDataset, Dict]:
+        ABdataset = TwoImageDataset(
+            base_dir=self.config.image_dir,
+            image_dirs=image_dirs,
+            extensions=self.config.extensions,
+            shuffles=shuffles,
+            transform=transform,
+            preload=preload
+        )
+        resources = {
+            'nameA': ABdataset.datasetA.fnames,
+            'nameB': ABdataset.datasetB.fnames,
+        }
+        return ABdataset, resources

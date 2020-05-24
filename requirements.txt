@@ -4,11 +4,11 @@ click
 gensim
 pandas
 transformers
-opencv_python
 torch
 simplejson
 torchvision
 matplotlib
 numpy
 mecab_python3
+Pillow
 scikit_learn

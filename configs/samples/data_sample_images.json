@@ -1,4 +1,5 @@
 {
     "image_dir": "data/sample_images",
+    "extensions": ["png"],
     "categories_path": "data/sample_images/categories.txt"
 }

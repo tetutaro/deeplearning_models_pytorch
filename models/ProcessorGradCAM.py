@@ -6,7 +6,6 @@ from html.parser import HTMLParser
 import numpy as np
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import cv2
 from torch.utils.data import DataLoader
 from .Processor import ConfigProcessor, Processor
 from .ImageLoaderGradCAM import ImageLoaderGradCAM
@@ -147,15 +146,15 @@ class ProcessorGradCAM(Processor):
         title_format = "predict {pred} from\n{name} (prob: {prob:.4f})"
         offset = 0
         for batch in dataloader:
-            batch_size = batch[0].size(0)
+            batch_size = batch.size(0)
             batch_results = list()
-            for x in batch[0].clone().cpu().detach().numpy():
+            for x in batch.clone().cpu().detach().numpy():
                 rdic = resources[offset]
                 batch_results.append({
                     'name': rdic['name'],
                     'raw': {
                         'title': "raw image %s" % rdic['name'],
-                        'image': rdic['raw'],
+                        'image': rdic['raw']
                     }
                 })
                 del resources[offset]['raw']
@@ -167,7 +166,7 @@ class ProcessorGradCAM(Processor):
                 else:
                     xpred = np.array([category2label[xcat]] * batch_size)
                     ytag = xcat
-                res = self.model(batch[0].to(self.device), pred=xpred)
+                res = self.model(batch.to(self.device), pred=xpred)
                 for bres, gcam, prob, pred in zip(
                     batch_results, res['gcam'], res['prob'], res['pred']
                 ):
@@ -244,7 +243,7 @@ class ProcessorGradCAM(Processor):
             for res in resources:
                 ax = fig.add_subplot(hnum, wnum, off)
                 tdic = res[tag]
-                ax.imshow(cv2.cvtColor(tdic['image'], cv2.COLOR_BGR2RGB))
+                ax.imshow(tdic['image'][..., ::-1])
                 ax.set_axis_off()
                 ax.set_title(tdic['title'])
                 off += 1
