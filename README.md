@@ -25,6 +25,10 @@ the pretrained [BERT](https://arxiv.org/abs/1810.04805) model that handles Japan
     - [arXiv](https://arxiv.org/abs/1903.10318)
     - [Author's original implementation](https://github.com/nlpyang/BertSum)
     - using [NICT BERT](https://alaginrc.nict.go.jp/nict-bert/index.html)
+- CycleGAN
+    - Zhu, Jun-Yan, et al. "Unpaired image-to-image translation using cycle-consistent adversarial networks." Proceedings of the IEEE international conference on computer vision. 2017.
+    - [arXiv](https://arxiv.org/abs/1703.10593)
+    - [CycleGAN project page](https://junyanz.github.io/CycleGAN/)
 
 ## Preparation
 
@@ -42,6 +46,12 @@ the pretrained [BERT](https://arxiv.org/abs/1810.04805) model that handles Japan
 - create config JSON files under the `configs` directory.
     - sample of config files are in the `configs/samples` directory
     - ex) `cd configs && ln -s samples/*.json .`
+
+## Download CycleGAN dataset
+
+- `cd data && wget https://raw.githubusercontent.com/junyanz/pytorch-CycleGAN-and-pix2pix/master/datasets/download_cyclegan_dataset.sh`
+- `mkdir datasets && chmod +x download_cyclegan_dataset.sh`
+- ex) `./download_cyclegan_dataset.sh horse2zebra`
 
 ## Structure of this repository
 
@@ -76,7 +86,9 @@ the pretrained [BERT](https://arxiv.org/abs/1810.04805) model that handles Japan
 - BertClassification
     - ex) `python bert_classification_ja.py -c configs/bert_classificaiton_livedoor_news_corpus.json`
 - BertSum
-    - ex) `python bertsum_ja.py -c configs/bertsum_livedoor_news_corpus.jon`
+    - ex) `python bertsum_ja.py -c configs/bertsum_livedoor_news_corpus.json`
+- CycleGAN
+    - ex) `python cyclegan.py -c configs/cyclegan_horse2zebra.json`
 
 - show visualization of TextCNN-GradCAM
     - install nginx and [FooTable](https://fooplugins.github.io/FooTable/)

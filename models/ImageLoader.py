@@ -22,7 +22,8 @@ class ConfigImageLoader(ConfigPreprocessor, ABC):
 
     def _init_imageloader(
         self: ConfigImageLoader,
-        config: dict
+        config: dict,
+        make_dir: bool
     ) -> None:
         # set parameters
         for param in self.imageloader_params:
@@ -33,6 +34,11 @@ class ConfigImageLoader(ConfigPreprocessor, ABC):
         assert(os.path.exists(self.image_dir))
         # internal parameters
         self.data_name = self.image_dir.split(os.sep)[-1]
+        if make_dir:
+            self.base_dir = os.path.join(
+                'binaries', config['model_name'], self.data_name
+            )
+            os.makedirs(self.base_dir, exist_ok=True)
         return
 
 
@@ -109,7 +115,7 @@ class TwoImageDataset(TensorDataset):
         self: TwoImageDataset,
         base_dir: str,
         image_dirs: List[List[str]],
-        extension: str,
+        extensions: List[str],
         shuffles: List[bool],
         transform: Optional[Callable],
         preload: bool
@@ -117,7 +123,7 @@ class TwoImageDataset(TensorDataset):
         self.datasetA = ImageDataset(
             base_dir=base_dir,
             image_dirs=image_dirs[0],
-            extension=extension,
+            extensions=extensions,
             shuffle=shuffles[0],
             transform=transform,
             preload=preload
@@ -125,7 +131,7 @@ class TwoImageDataset(TensorDataset):
         self.datasetB = ImageDataset(
             base_dir=base_dir,
             image_dirs=image_dirs[1],
-            extension=extension,
+            extensions=extensions,
             shuffle=shuffles[1],
             transform=transform,
             preload=preload
@@ -136,7 +142,7 @@ class TwoImageDataset(TensorDataset):
         self: TwoImageDataset,
         index: int
     ) -> Tuple[torch.Tensor]:
-        return tuple(
+        return (
             self.datasetA.__getitem__(index),
             self.datasetB.__getitem__(index)
         )

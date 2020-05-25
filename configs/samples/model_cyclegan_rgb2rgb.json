@@ -1,0 +1,8 @@
+{
+    "input_channels": 3,
+    "output_channels": 3,
+    "lambda_a": 10.0,
+    "lambda_b": 10.0,
+    "lambda_identity": 0.5,
+    "random_state": 12
+}

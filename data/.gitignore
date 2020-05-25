@@ -2,3 +2,5 @@
 text
 *.json
 synset_words.txt
+download_cyclegan_dataset.sh
+datasets
