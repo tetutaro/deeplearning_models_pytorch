@@ -144,14 +144,14 @@ class CycleGAN(nn.Module):
         self.genAB = GeneratorCycleGAN(
             in_channels=self.config.input_channels,
             out_channels=self.config.output_channels,
-            num_filters=self.config.generator_filsters,
+            num_filters=self.config.generator_filters,
             num_layers=self.config.generator_layers,
             num_sampling=self.config.generator_samplings
         )
         self.genBA = GeneratorCycleGAN(
             in_channels=self.config.input_channels,
             out_channels=self.config.output_channels,
-            num_filters=self.config.generator_filsters,
+            num_filters=self.config.generator_filters,
             num_layers=self.config.generator_layers,
             num_sampling=self.config.generator_samplings
         )
