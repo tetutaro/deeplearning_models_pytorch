@@ -69,7 +69,7 @@ class DownSamplingLayer(nn.Module):
         modules['conv'] = nn.Conv2d(
             in_channels=in_channels, out_channels=out_channels,
             kernel_size=3,
-            padding=1, bias=False
+            stride=2, padding=1, bias=False
         )
         modules['norm'] = nn.BatchNorm2d(
             num_features=out_channels,
@@ -91,10 +91,10 @@ class UpSamplingLayer(nn.Module):
     ) -> None:
         super().__init__()
         modules = OrderedDict()
-        modules['conv1'] = nn.ConvTranspose2d(
+        modules['conv'] = nn.ConvTranspose2d(
             in_channels=in_channels, out_channels=out_channels,
             kernel_size=3,
-            padding=1, output_padding=1, bias=False
+            stride=2, padding=1, output_padding=1, bias=False
         )
         modules['norm'] = nn.BatchNorm2d(
             num_features=out_channels,

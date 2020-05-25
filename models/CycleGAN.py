@@ -162,20 +162,20 @@ class CycleGAN(nn.Module):
         # Generator's loss 1: Identity loss
         lossAA = F.l1_loss(
             self.genBA(realA), realA
-        ) * self.config.lambda_a * self.config.lambda_identity
+        ).cpu() * self.config.lambda_a * self.config.lambda_identity
         lossBB = F.l1_loss(
             self.genAB(realB), realB
-        ) * self.config.lambda_a * self.config.lambda_identity
+        ).cpu() * self.config.lambda_a * self.config.lambda_identity
         loss_identity = (lossAA + lossBB) * 0.5
         # Generator's loss 2: GAN loss
         fakeB = self.genAB(realA)
-        pred_AB = self.disB(fakeB)
+        pred_AB = self.disB(fakeB).cpu()
         lossAB = F.mse_loss(
             pred_AB,
             torch.tensor(1.0).expand_as(pred_AB)
         )
         fakeA = self.genBA(realB)
-        pred_BA = self.disA(fakeA)
+        pred_BA = self.disA(fakeA).cpu()
         lossBA = F.mse_loss(
             pred_BA,
             torch.tensor(1.0).expand_as(pred_BA)
@@ -185,37 +185,41 @@ class CycleGAN(nn.Module):
         cycleA = self.genBA(fakeB)
         lossABA = F.l1_loss(
             cycleA, realA
-        ) * self.config.lambda_a
+        ).cpu() * self.config.lambda_a
         cycleB = self.genAB(fakeA)
         lossBAB = F.l1_loss(
             cycleB, realB
-        ) * self.config.lambda_b
+        ).cpu() * self.config.lambda_b
         loss_cycle = (lossABA + lossBAB) * 0.5
         # Generator's loss
         loss_gen = loss_gan + loss_cycle + loss_identity
-        return loss_gen, fakeA.detach(), fakeB.detach()
+        # keep fakes for forward_discriminator()
+        self.fakeA = fakeA.detach()
+        self.fakeB = fakeB.detach()
+        return loss_gen
 
     def forward_discriminator(
         self: CycleGAN,
         side: str,
-        real: torch.Tensor,
-        fake: torch.Tensor
+        real: torch.Tensor
     ) -> torch.Tensor:
         if side == 'A':
             dis = self.disA
             pool = self.poolA
+            fake = self.fakeA
         else:  # side == 'B'
-            dis = self.dicB
+            dis = self.disB
             pool = self.poolB
+            fake = self.fakeB
         # Discriminator's loss 1: real loss
-        pred_real = dis(real)
+        pred_real = dis(real).cpu()
         loss_real = F.mse_loss(
             pred_real,
             torch.tensor(1.0).expand_as(pred_real)
         )
         # Discriminator's loss 2: fake loss
         fake_ = pool.query(fake)
-        pred_fake = dis(fake_)
+        pred_fake = dis(fake_).cpu()
         loss_fake = F.mse_loss(
             pred_fake,
             torch.tensor(0.0).expand_as(pred_fake)

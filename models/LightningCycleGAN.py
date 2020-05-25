@@ -91,31 +91,26 @@ class LightningCycleGAN(Lightning):
     def training_step(
         self: LightningCycleGAN,
         batch: Tuple[torch.Tensor],
-        batch_index: int,
-        optimizer_index: int,
-        hiddens: Tuple[torch.Tensor]
+        batch_idx: int,
+        optimizer_idx: int
     ) -> Dict:
         realA = batch[0]
         realB = batch[1]
-        if optimizer_index == 0:
-            loss, fakeA, fakeB = self.forward(
+        if optimizer_idx == 0:
+            loss = self.forward(
                 realA=realA, realB=realB
             )
-            hiddens = (fakeA, fakeB)
         else:
-            fakeA = hiddens[0]
-            fakeB = hiddens[1]
-            if optimizer_index == 1:
+            if optimizer_idx == 1:
                 loss = self.model.forward_discriminator(
-                    side='A', real=realA, fake=fakeA
+                    side='A', real=realA
                 )
-            else:  # optimizer_index == 2
+            else:  # optimizer_idx == 2
                 loss = self.model.forward_discriminator(
-                    side='B', real=realB, fake=fakeB
+                    side='B', real=realB
                 )
         return {
             'loss': loss,
-            'hiddens': hiddens,
         }
 
     def training_epoch_end(
@@ -141,14 +136,14 @@ class LightningCycleGAN(Lightning):
     ) -> Dict:
         realA = batch[0]
         realB = batch[1]
-        loss_gens, fakeA, fakeB = self.forward(
+        loss_gens = self.forward(
             realA=realA, realB=realB
         )
         loss_disA = self.model.forward_discriminator(
-            side='A', real=realA, fake=fakeA
+            side='A', real=realA
         )
         loss_disB = self.model.forward_discriminator(
-            side='B', real=realB, fake=fakeB
+            side='B', real=realB
         )
         loss = (loss_gens + ((loss_disA + loss_disB) * 0.5)) * 0.5
         return {

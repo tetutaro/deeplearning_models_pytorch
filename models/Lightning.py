@@ -53,10 +53,11 @@ class Lightning(LightningModule, ABC):
         )
         # detect gpus
         if torch.cuda.is_available():
-            # gpus = torch.cuda.device_count()
-            # distributed_backend = 'dp'
-            gpus = 1
-            distributed_backend = None
+            gpus = torch.cuda.device_count()
+            if gpus == 1:
+                distributed_backend = None
+            else:
+                distributed_backend = 'ddp'
         else:
             gpus = None
             distributed_backend = None
