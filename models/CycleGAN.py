@@ -10,6 +10,12 @@ import torch.nn.init as init
 from .DeepLearning import ConfigDeepLearning
 from .NetworkGAN import GeneratorCycleGAN, DiscriminatorCycleGAN
 
+DEFAULT_GEN_FILTERS = 64
+DEFAULT_GEN_LAYERS = 9
+DEFUALT_GEN_SAMPLINGS = 2
+DEFAULT_DIS_FILTERS = 64
+DEFAULT_DIS_LAYERS = 4
+DEFAULT_POOL_SIZE = 64
 DEFAULT_LAMBDA_A = 10.0
 DEFAULT_LAMBDA_B = 10.0
 DEFAULT_LAMBDA_IDENTITY = 0.5
@@ -21,6 +27,12 @@ class ConfigCycleGAN(ConfigDeepLearning):
         # name, vtype, is_require, default
         ('input_channels', int, True, None),
         ('output_channels', int, True, None),
+        ('generator_filters', int, False, DEFAULT_GEN_FILTERS),
+        ('generator_layers', int, False, DEFAULT_GEN_LAYERS),
+        ('generator_samplings', int, False, DEFUALT_GEN_SAMPLINGS),
+        ('discriminator_filters', int, False, DEFAULT_DIS_FILTERS),
+        ('discriminator_layers', int, False, DEFAULT_DIS_LAYERS),
+        ('pool_size', int, False, DEFAULT_POOL_SIZE),
         ('lambda_a', float, False, DEFAULT_LAMBDA_A),
         ('lambda_b', float, False, DEFAULT_LAMBDA_B),
         ('lambda_identity', float, False, DEFAULT_LAMBDA_IDENTITY),
@@ -87,7 +99,7 @@ def _init_weights(net: nn.Module, std: Optional[float] = 0.02) -> None:
 
 
 class DataPool(object):
-    def __init__(self: DataPool, pool_size: Optional[int] = 64) -> None:
+    def __init__(self: DataPool, pool_size: int) -> None:
         self.pool_size = pool_size
         if self.pool_size > 0:
             self.data_list = list()
@@ -131,18 +143,28 @@ class CycleGAN(nn.Module):
         # generators
         self.genAB = GeneratorCycleGAN(
             in_channels=self.config.input_channels,
-            out_channels=self.config.output_channels
+            out_channels=self.config.output_channels,
+            num_filters=self.config.generator_filsters,
+            num_layers=self.config.generator_layers,
+            num_sampling=self.config.generator_samplings
         )
         self.genBA = GeneratorCycleGAN(
             in_channels=self.config.input_channels,
-            out_channels=self.config.output_channels
+            out_channels=self.config.output_channels,
+            num_filters=self.config.generator_filsters,
+            num_layers=self.config.generator_layers,
+            num_sampling=self.config.generator_samplings
         )
         # discriminators
         self.disA = DiscriminatorCycleGAN(
-            in_channels=self.config.output_channels
+            in_channels=self.config.output_channels,
+            num_filters=self.config.discriminator_filters,
+            num_layers=self.config.discriminator_layers
         )
         self.disB = DiscriminatorCycleGAN(
-            in_channels=self.config.output_channels
+            in_channels=self.config.output_channels,
+            num_filters=self.config.discriminator_filters,
+            num_layers=self.config.discriminator_layers
         )
         # initialize weights
         _init_weights(self.genAB)
@@ -150,8 +172,8 @@ class CycleGAN(nn.Module):
         _init_weights(self.disA)
         _init_weights(self.disB)
         # data pool
-        self.poolA = DataPool()
-        self.poolB = DataPool()
+        self.poolA = DataPool(self.config.pool_size)
+        self.poolB = DataPool(self.config.pool_size)
         return
 
     def forward(

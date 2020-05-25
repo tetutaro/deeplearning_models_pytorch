@@ -1,5 +1,5 @@
 {
-    "batch_size": 64,
+    "batch_size": 16,
     "validation_rate": 0.0,
     "num_workers": 8,
     "min_epochs": 0,

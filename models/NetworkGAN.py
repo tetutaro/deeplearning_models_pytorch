@@ -12,9 +12,9 @@ class GeneratorCycleGAN(nn.Module):
         self: GeneratorCycleGAN,
         in_channels: int,
         out_channels: int,
-        num_filters: Optional[int] = 64,
-        num_layers: Optional[int] = 9,
-        num_sampling: Optional[int] = 2
+        num_filters: int,
+        num_layers: int,
+        num_sampling: int
     ) -> None:
         super().__init__()
         modules = OrderedDict()
@@ -144,8 +144,8 @@ class DiscriminatorCycleGAN(nn.Module):
     def __init__(
         self: DiscriminatorCycleGAN,
         in_channels: int,
-        num_filters: Optional[int] = 64,
-        num_layers: Optional[int] = 4
+        num_filters: int,
+        num_layers: int
     ) -> None:
         super().__init__()
         modules = OrderedDict()
