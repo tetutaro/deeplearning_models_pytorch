@@ -3,7 +3,7 @@
     "config_preprocessor_json": "configs/imageloader_cyclegan.json",
     "config_model_json": "configs/model_cyclegan_rgb2rgb.json",
     "config_lightning_json": "configs/lightning_gan.json",
-    "batch_size": 16,
+    "batch_size": 4,
     "test_rate": 0.0,
     "fit": true,
     "refit": false,

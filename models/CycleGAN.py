@@ -216,8 +216,8 @@ class CycleGAN(nn.Module):
         # Generator's loss
         loss_gen = loss_gan + loss_cycle + loss_identity
         # keep fakes for forward_discriminator()
-        self.fakeA = fakeA.detach()
-        self.fakeB = fakeB.detach()
+        self.fakeA = fakeA.detach().clone()
+        self.fakeB = fakeB.detach().clone()
         return loss_gen
 
     def forward_discriminator(

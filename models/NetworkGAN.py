@@ -171,7 +171,7 @@ class DiscriminatorCycleGAN(nn.Module):
         modules['conv'] = nn.Conv2d(
             in_channels=layer_in, out_channels=1,
             kernel_size=4,
-            stride=1, padding=1
+            stride=1, padding=1, bias=False
         )
         self.net = nn.Sequential(modules)
         return

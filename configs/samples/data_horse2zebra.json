@@ -1,6 +1,6 @@
 {
     "image_dir": "data/datasets/horse2zebra",
     "extensions": ["jpg"],
-    "subdirs_a": ["trainA", "testA"],
-    "subdirs_b": ["trainB", "testB"]
+    "subdirs_a": ["trainA"],
+    "subdirs_b": ["trainB"]
 }

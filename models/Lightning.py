@@ -19,6 +19,7 @@ DEFAULT_MAX_EPOCHS = 1000
 DEFAULT_MIN_DELTA = 0
 DEFAULT_PATIENCE = 0
 DEFAULT_LEARNING_RATE = 0.001
+DEFAULT_EARLY_STOPPING = True
 
 
 class ConfigLightning(Config, ABC):
@@ -32,6 +33,7 @@ class ConfigLightning(Config, ABC):
         ('min_delta', float, False, DEFAULT_MIN_DELTA),
         ('patience', int, False, DEFAULT_PATIENCE),
         ('learning_rate', float, False, DEFAULT_LEARNING_RATE),
+        ('early_stopping', bool, False, DEFAULT_EARLY_STOPPING),
     ]
 
 
@@ -42,11 +44,14 @@ class Lightning(LightningModule, ABC):
     ) -> None:
         self.dataset = dataset
         # create early stopping instance
-        early_stop_callback = EarlyStopping(
-            monitor='val_loss',
-            min_delta=self.config.min_delta,
-            patience=self.config.patience
-        )
+        if self.config.early_stopping:
+            early_stop_callback = EarlyStopping(
+                monitor='val_loss',
+                min_delta=self.config.min_delta,
+                patience=self.config.patience
+            )
+        else:
+            early_stop_callback = None
         # create logger instance
         logger = TensorBoardLogger(
             'lightning_logs', name=self.config.log_class_name
@@ -109,6 +114,11 @@ class Lightning(LightningModule, ABC):
 
     def fit(self: Lightning) -> None:
         return self.trainer.fit(self)
+
+    def on_epoch_start(self: Lightning) -> None:
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return
 
     @abstractmethod
     def forward(self: Lightning, x: torch.Tensor):

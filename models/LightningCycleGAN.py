@@ -145,7 +145,7 @@ class LightningCycleGAN(Lightning):
         loss_disB = self.model.forward_discriminator(
             side='B', real=realB
         )
-        loss = (loss_gens + ((loss_disA + loss_disB) * 0.5)) * 0.5
+        loss = loss_gens + loss_disA + loss_disB
         return {
             'val_loss': loss,
         }
