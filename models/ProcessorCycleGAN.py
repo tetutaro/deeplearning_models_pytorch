@@ -26,8 +26,6 @@ class ConfigProcessorCycleGAN(ConfigProcessor):
         # set parameters
         for param in self.processor_params:
             self._init_param(config, *param)
-        # value assertion
-        assert(self.predict is False)
         # set classes
         self.prep_class = ImageLoaderCycleGAN
         self.model_class = CycleGAN
@@ -81,21 +79,47 @@ class ProcessorCycleGAN(Processor):
         dataset: TensorDataset,
         epoch: int
     ) -> None:
-        assert(dataset[0].size(0) == 1)
+        assert(len(dataset) == 1)
         model.eval()
+        dataA = dataset[0][0].unsqueeze(dim=0).to(self.device)
+        dataB = dataset[0][1].unsqueeze(dim=0).to(self.device)
         with torch.no_grad():
-            ret = model(
-                dataA=dataset[0].to(self.device),
-                dataB=dataset[1].to(self.device)
-            )
+            ret = model(dataA=dataA, dataB=dataB)
         fakeB = convert_fake(ret['fakeB'], (256, 256))
         fakeA = convert_fake(ret['fakeA'], (256, 256))
-        fakeB.save(
-            os.path.join(self.output_prefix, self.nameA, "%03d.png" % epoch)
+        # save fakeB
+        fname = os.path.join(
+            self.output_prefix,
+            self.nameA,
+            "%03d.png" % epoch
         )
-        fakeA.save(
-            os.path.join(self.output_prefix, self.nameB, "%03d.png" % epoch)
+        fig = plt.figure(figsize=(2.56, 2.56))
+        plt.subplots_adjust(
+            top=1, bottom=0, right=1, left=0, hspace=0, wspace=0
         )
+        ax = plt.gca()
+        ax.imshow(fakeB)
+        ax.set_axis_off()
+        plt.margins(0, 0)
+        plt.savefig(fname, pad_inches=0)
+        plt.close(fig)
+        # save fakeA
+        fname = os.path.join(
+            self.output_prefix,
+            self.nameB,
+            "%03d.png" % epoch
+        )
+        fig = plt.figure(figsize=(2.56, 2.56))
+        plt.subplots_adjust(
+            top=1, bottom=0, right=1, left=0, hspace=0, wspace=0
+        )
+        ax = plt.gca()
+        ax.imshow(fakeA)
+        ax.set_axis_off()
+        plt.margins(0, 0)
+        plt.savefig(fname, pad_inches=0)
+        plt.close(fig)
+        # back to train
         model.train(True)
         return
 
@@ -124,7 +148,7 @@ class ProcessorCycleGAN(Processor):
         res = resources[0]
         hnum = 2
         wnum = 2
-        fig = plt.figure(figsize=(wnum * 5, hnum * 5), facecolo='w')
+        fig = plt.figure(figsize=(wnum * 2.56, hnum * 2.56), facecolor='w')
         for i, (img, title) in enumerate(zip(
             [res['rawA'], res['fakeB'], res['rawB'], res['fakeA']],
             [
@@ -143,4 +167,5 @@ class ProcessorCycleGAN(Processor):
             facecolor='w', edgecolor='w',
             bbox_inches='tight', pad_inches=0.1
         )
+        plt.close(fig)
         return

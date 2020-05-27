@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Optional
 from collections import OrderedDict
 import torch
 import torch.nn as nn

@@ -51,10 +51,17 @@ class ImageLoaderCycleGAN(ImageLoader):
             config_data_json,
             config_preprocess_json
         )
-        self.transform = transforms.Compose([
+        self.transform_train = transforms.Compose([
             transforms.Resize((286, 286)),
             transforms.RandomCrop((256, 256)),
-            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.5, 0.5, 0.5],
+                std=[0.5, 0.5, 0.5]
+            )
+        ])
+        self.transform_test = transforms.Compose([
+            transforms.Resize((256, 256)),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.5, 0.5, 0.5],
@@ -75,7 +82,7 @@ class ImageLoaderCycleGAN(ImageLoader):
         return self.create_ABdataset(
             image_dirs=[self.config.subdirs_a, self.config.subdirs_b],
             shuffles=[self.config.shuffle_a, self.config.shuffle_b],
-            transform=self.transform,
+            transform=self.transform_train,
             preload=self.config.preload
         )
 
@@ -88,6 +95,6 @@ class ImageLoaderCycleGAN(ImageLoader):
                 [self.config.test_image[1]]
             ],
             shuffles=[False, False],
-            transform=self.transform,
+            transform=self.transform_test,
             preload=True
         )

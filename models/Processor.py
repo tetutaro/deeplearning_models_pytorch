@@ -92,7 +92,7 @@ class Processor(ABC):
         if load:
             model.load()
         # create lightning instance
-        if hasattr(self.ckpt_func):
+        if hasattr(self, 'ckpt_func'):
             light = self.config.light_class(
                 self.config.config_lightning_json,
                 model,

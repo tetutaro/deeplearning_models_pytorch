@@ -62,7 +62,7 @@ class ProcessorTextCNN(Processor):
             pred_prob = np.max(pred, axis=1).tolist()
             pred_label = np.argmax(pred, axis=1).tolist()
             label2cat = self.unique_categories
-            pred_cat = [label2cat[l] for l in pred_label]
+            pred_cat = [label2cat[label] for label in pred_label]
             pred_cats.extend(pred_cat)
             pred_probs.extend(pred_prob)
         for res, cat, prob in zip(

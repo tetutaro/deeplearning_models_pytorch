@@ -87,7 +87,7 @@ class ImageDataset(TensorDataset):
                     img = transforms.ToTensor()(raw.copy())
                 else:
                     img = self.transform(raw.copy())
-                self.raws.append(np.array(raw, dtype=np.uint8)[..., ::-1])
+                self.raws.append(np.array(raw, dtype=np.uint8))
                 self.imgs.append(img)
         return
 
@@ -198,7 +198,7 @@ class ImageLoader(Preprocessor, ABC):
             lenA = len(ABdataset.datasetA.fnames)
             lenB = len(ABdataset.datasetB.fnames)
             tdic['nameA'] = ABdataset.datasetA.fnames[i % lenA]
-            tdic['nameB'] = ABdataset.datasetA.fnames[i % lenB]
+            tdic['nameB'] = ABdataset.datasetB.fnames[i % lenB]
             if preload:
                 tdic['rawA'] = ABdataset.datasetA.raws[i % lenA]
                 tdic['rawB'] = ABdataset.datasetB.raws[i % lenB]

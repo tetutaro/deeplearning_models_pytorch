@@ -262,8 +262,8 @@ class TokenizerBertSum(Tokenizer):
                 self.config.min_sentences
             )
             labels = [0] * len(document_sentences)
-            for l in oracle_ids:
-                labels[l] = 1
+            for oracle_id in oracle_ids:
+                labels[oracle_id] = 1
         else:
             labels = [0] * len(document_sentences)
         num_sentences = len(cls_ids)

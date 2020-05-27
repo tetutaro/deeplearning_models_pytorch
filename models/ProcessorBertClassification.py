@@ -74,7 +74,7 @@ class ProcessorBertClassification(Processor):
             label2cat = self.unique_categories
             pred_prob = np.max(probs, axis=1).tolist()
             pred_label = np.argmax(probs, axis=1).tolist()
-            pred_cat = [label2cat[l] for l in pred_label]
+            pred_cat = [label2cat[label] for label in pred_label]
             pred_cats.extend(pred_cat)
             pred_probs.extend(pred_prob)
         for res, cat, prob in zip(

@@ -7,7 +7,7 @@
     "test_rate": 0.0,
     "fit": true,
     "refit": false,
-    "predict": false,
+    "predict": true,
     "output_extension": "png",
     "output_train": false
 }

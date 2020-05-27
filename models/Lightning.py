@@ -122,23 +122,15 @@ class Lightning(LightningModule, ABC):
     def fit(self: Lightning) -> None:
         return self.trainer.fit(self)
 
-    def on_epoch_start(
-        self: Lightning,
-        trainer: Trainer,
-        pl_module: Lightning
-    ) -> None:
+    def on_epoch_start(self: Lightning) -> None:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         return
 
-    def on_epoch_end(
-        self: Lightning,
-        trainer: Trainer,
-        pl_module: Lightning
-    ) -> None:
+    def on_epoch_end(self: Lightning) -> None:
         if self.ckpt_func is not None:
             self.ckpt_func(
-                pl_module.model,
+                self.model,
                 self.ckpt_dataset,
                 self.current_epoch
             )
