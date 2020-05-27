@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable, Optional
 from abc import ABC, abstractmethod
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from pytorch_lightning import LightningModule, Trainer
@@ -40,9 +41,15 @@ class ConfigLightning(Config, ABC):
 class Lightning(LightningModule, ABC):
     def _init_lightinig(
         self: Lightning,
-        dataset: TensorDataset
+        model: nn.Mudule,
+        dataset: TensorDataset,
+        ckpt_func: Optional[Callable] = None,
+        ckpt_dataset: Optional[TensorDataset] = None
     ) -> None:
+        self.model = model
         self.dataset = dataset
+        self.ckpt_func = ckpt_func
+        self.ckpt_dataset = ckpt_dataset
         # create early stopping instance
         if self.config.early_stopping:
             early_stop_callback = EarlyStopping(
@@ -115,9 +122,26 @@ class Lightning(LightningModule, ABC):
     def fit(self: Lightning) -> None:
         return self.trainer.fit(self)
 
-    def on_epoch_start(self: Lightning) -> None:
+    def on_epoch_start(
+        self: Lightning,
+        trainer: Trainer,
+        pl_module: Lightning
+    ) -> None:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        return
+
+    def on_epoch_end(
+        self: Lightning,
+        trainer: Trainer,
+        pl_module: Lightning
+    ) -> None:
+        if self.ckpt_func is not None:
+            self.ckpt_func(
+                pl_module.model,
+                self.ckpt_dataset,
+                self.current_epoch
+            )
         return
 
     @abstractmethod

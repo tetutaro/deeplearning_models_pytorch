@@ -41,8 +41,7 @@ class LightningBertClassification(Lightning):
         # initialize LightningModule
         super().__init__()
         self.config = ConfigLightningBertClassification(config_lightning_json)
-        self.model = model
-        self._init_lightinig(dataset)
+        self._init_lightinig(model=model, dataset=dataset)
         return None
 
     def forward(

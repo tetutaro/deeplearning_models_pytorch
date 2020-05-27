@@ -42,8 +42,7 @@ class LightningTextCNN(Lightning):
         # initialize LightningModule
         super().__init__()
         self.config = ConfigLightningTextCNN(config_lightning_json)
-        self.model = model
-        self._init_lightinig(dataset)
+        self._init_lightinig(model=model, dataset=dataset)
         return None
 
     def forward(self: LightningTextCNN, x: torch.Tensor):
