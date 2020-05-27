@@ -47,6 +47,8 @@ class Processor(ABC):
             prep.load()
         # preprocess
         self.dataset, self.resources = prep.preprocess()
+        if hasattr(prep, 'test_preprocess'):
+            self.test_dataset, self.test_resources = prep.test_preprocess()
         if not load:
             prep.save()
         self._cache_preprocess({'prep': prep})
@@ -68,6 +70,8 @@ class Processor(ABC):
     def _split_data(self: Processor) -> None:
         # devide data into train and test
         if self.config.test_rate > 0:
+            assert(hasattr(self, 'test_dataset') is False)
+            assert(hasattr(self, 'test_resources') is False)
             ss = ShuffleSplit(n_splits=1, test_size=self.config.test_rate)
             train_idx, test_idx = list(ss.split(self.resources))[0]
             self.train_dataset = Subset(self.dataset, train_idx)
@@ -88,11 +92,20 @@ class Processor(ABC):
         if load:
             model.load()
         # create lightning instance
-        light = self.config.light_class(
-            self.config.config_lightning_json,
-            model,
-            self.train_dataset
-        )
+        if hasattr(self.ckpt_func):
+            light = self.config.light_class(
+                self.config.config_lightning_json,
+                model,
+                self.train_dataset,
+                self.ckpt_func,
+                self.test_dataset
+            )
+        else:
+            light = self.config.light_class(
+                self.config.config_lightning_json,
+                model,
+                self.train_dataset
+            )
         # fit
         light.fit()
         # save
@@ -156,11 +169,6 @@ class Processor(ABC):
         return
 
     def _predict_and_output(self: Processor, dtype: str) -> None:
-        # detect computing device
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        else:
-            self.device = torch.device('cpu')
         self.model.to(self.device)
         # select data
         if dtype == "train":
@@ -170,8 +178,12 @@ class Processor(ABC):
             dataset = self.test_dataset
             resources = self.test_resources
         else:
-            dataset = self.dataset
-            resources = self.resources
+            if hasattr(self, 'test_dataset'):
+                dataset = self.test_dataset
+                resources = self.test_resources
+            else:
+                dataset = self.dataset
+                resources = self.resources
         dataloader = DataLoader(
             dataset,
             batch_size=self.config.batch_size, shuffle=False, num_workers=0
@@ -182,6 +194,12 @@ class Processor(ABC):
         return
 
     def process(self: Processor):
+        # detect computing device
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+        # create load flag
         if self.config.fit:
             if self.config.refit:
                 load = True

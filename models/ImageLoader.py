@@ -61,6 +61,9 @@ class ImageDataset(TensorDataset):
                 search_dirs.append(os.path.join(base_dir, d))
         image_paths = list()
         for d in search_dirs:
+            if d.endswith(tuple(['.' + x for x in extensions])):
+                image_paths.append(d)
+                continue
             for e in extensions:
                 for image_path in glob(
                     os.path.join(d, '*.' + e)
@@ -180,7 +183,7 @@ class ImageLoader(Preprocessor, ABC):
         shuffles: List[bool],
         transform: Optional[Callable],
         preload: bool
-    ) -> Tuple[TwoImageDataset, Dict]:
+    ) -> Tuple[TwoImageDataset, List[Dict]]:
         ABdataset = TwoImageDataset(
             base_dir=self.config.image_dir,
             image_dirs=image_dirs,
@@ -189,8 +192,15 @@ class ImageLoader(Preprocessor, ABC):
             transform=transform,
             preload=preload
         )
-        resources = {
-            'nameA': ABdataset.datasetA.fnames,
-            'nameB': ABdataset.datasetB.fnames,
-        }
+        resources = list()
+        for i in range(len(ABdataset)):
+            tdic = dict()
+            lenA = len(ABdataset.datasetA.fnames)
+            lenB = len(ABdataset.datasetB.fnames)
+            tdic['nameA'] = ABdataset.datasetA.fnames[i % lenA]
+            tdic['nameB'] = ABdataset.datasetA.fnames[i % lenB]
+            if preload:
+                tdic['rawA'] = ABdataset.datasetA.raws[i % lenA]
+                tdic['rawB'] = ABdataset.datasetB.raws[i % lenB]
+            resources.append(tdic)
         return ABdataset, resources

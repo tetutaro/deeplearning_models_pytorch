@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Callable
 from itertools import chain
 import torch
 import torch.optim as optim
@@ -39,12 +39,19 @@ class LightningCycleGAN(Lightning):
         self: LightningCycleGAN,
         config_lightning_json: str,
         model: CycleGAN,
-        dataset: TensorDataset
+        dataset: TensorDataset,
+        ckpt_func: Callable,
+        ckpt_dataset: TensorDataset
     ) -> None:
         # initialize LightningModule
         super().__init__()
         self.config = ConfigLightningCycleGAN(config_lightning_json)
-        self._init_lightinig(model=model, dataset=dataset)
+        self._init_lightinig(
+            model=model,
+            dataset=dataset,
+            ckpt_func=ckpt_func,
+            ckpt_dataset=ckpt_dataset
+        )
         return None
 
     def configure_optimizers(self: LightningCycleGAN) -> List:

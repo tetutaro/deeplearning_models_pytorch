@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict
+from typing import Dict, Optional
 import os
 import numpy as np
 import torch
@@ -129,7 +129,7 @@ class BertClassification(nn.Module):
         self.model.save_pretrained(self.config.base_dir)
         return
 
-    def train(self: BertClassification, mode: bool) -> None:
+    def train(self: BertClassification, mode: Optional[bool] = True) -> None:
         self.model.train(mode)
         return
 

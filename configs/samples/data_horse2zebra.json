@@ -1,6 +1,12 @@
 {
     "image_dir": "data/datasets/horse2zebra",
     "extensions": ["jpg"],
+    "name_a": "horse",
+    "name_b": "zebra",
     "subdirs_a": ["trainA"],
-    "subdirs_b": ["trainB"]
+    "subdirs_b": ["trainB"],
+    "test_image": [
+        "trainA/n02381460_5214.jpg",
+        "trainB/n02391049_152.jpg"
+    ]
 }

@@ -319,7 +319,7 @@ class BertSum(nn.Module):
         )
         return
 
-    def train(self: BertSum, mode: bool) -> None:
+    def train(self: BertSum, mode: Optional[bool] = True) -> None:
         self.bert.train(mode)
         self.encoder.train(mode)
         return

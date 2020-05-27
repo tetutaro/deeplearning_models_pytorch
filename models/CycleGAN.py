@@ -278,7 +278,7 @@ class CycleGAN(nn.Module):
         torch.save(self.state_dict(), self.config.binary_path)
         return
 
-    def train(self: CycleGAN, mode: bool) -> None:
+    def train(self: CycleGAN, mode: Optional[bool] = True) -> None:
         self.genAB.train(mode)
         self.genBA.train(mode)
         self.disA.train(mode)
