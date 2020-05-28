@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 import numpy as np
 import torch
 import torch.nn as nn
@@ -180,39 +180,42 @@ class CycleGAN(nn.Module):
         self: CycleGAN,
         realA: torch.Tensor,
         realB: torch.Tensor,
-    ) -> Tuple[torch.Tensor]:
-        # Generator's loss 1: Identity loss
-        lossAA = F.l1_loss(
-            self.genBA(realA), realA
-        ).cpu() * self.config.lambda_a * self.config.lambda_identity
-        lossBB = F.l1_loss(
-            self.genAB(realB), realB
-        ).cpu() * self.config.lambda_a * self.config.lambda_identity
-        loss_identity = (lossAA + lossBB) * 0.5
-        # Generator's loss 2: GAN loss
-        fakeB = self.genAB(realA)
-        pred_AB = self.disB(fakeB).cpu()
+    ) -> torch.Tensor:
+        # just forward
+        fakeB = self.genAB(realA)   # realA -> genAB -> fakeB (like realB)
+        fakeA = self.genBA(realB)   # realB -> genBA -> fakeA (like realA)
+        cycleB = self.genAB(fakeA)  # fakeA -> genAB -> cycleB (same as realB)
+        cycleA = self.genBA(fakeB)  # fakeB -> genBA -> cycleA (same as realA)
+        identB = self.genAB(realB)  # realB -> genAB -> identB (nothing change)
+        identA = self.genBA(realA)  # realA -> genBA -> identA (nothing change)
+        # Generator's loss 1: GAN loss
+        pred_AB = self.disB(fakeB).cpu()  # fakeB -> disB() -> maybe true
         lossAB = F.mse_loss(
             pred_AB,
             torch.tensor(1.0).expand_as(pred_AB)
         )
-        fakeA = self.genBA(realB)
-        pred_BA = self.disA(fakeA).cpu()
+        pred_BA = self.disA(fakeA).cpu()  # fakeA -> disA() -> maybe true
         lossBA = F.mse_loss(
             pred_BA,
             torch.tensor(1.0).expand_as(pred_BA)
         )
-        loss_gan = (lossAB + lossBA) * 0.5
-        # Generator's loss 3: Cycle loss
-        cycleA = self.genBA(fakeB)
+        loss_gan = lossAB + lossBA
+        # Generator's loss 2: Cycle loss
         lossABA = F.l1_loss(
             cycleA, realA
         ).cpu() * self.config.lambda_a
-        cycleB = self.genAB(fakeA)
         lossBAB = F.l1_loss(
             cycleB, realB
         ).cpu() * self.config.lambda_b
-        loss_cycle = (lossABA + lossBAB) * 0.5
+        loss_cycle = lossABA + lossBAB
+        # Generator's loss 3: Identity loss
+        lossAA = F.l1_loss(
+            identA, realA
+        ).cpu() * self.config.lambda_a * self.config.lambda_identity
+        lossBB = F.l1_loss(
+            identB, realB
+        ).cpu() * self.config.lambda_b * self.config.lambda_identity
+        loss_identity = lossAA + lossBB
         # Generator's loss
         loss_gen = loss_gan + loss_cycle + loss_identity
         # keep fakes for forward_discriminator()
@@ -221,6 +224,16 @@ class CycleGAN(nn.Module):
         return loss_gen
 
     def forward_discriminator(
+        self: CycleGAN,
+        realA: torch.Tensor,
+        realB: torch.Tensor,
+    ) -> torch.Tensor:
+        loss_disA = self._forward_each_discriminator(side='A', real=realA)
+        loss_disB = self._forward_each_discriminator(side='B', real=realB)
+        loss_dis = loss_disA + loss_disB
+        return loss_dis
+
+    def _forward_each_discriminator(
         self: CycleGAN,
         side: str,
         real: torch.Tensor
@@ -234,14 +247,14 @@ class CycleGAN(nn.Module):
             pool = self.poolB
             fake = self.fakeB
         # Discriminator's loss 1: real loss
-        pred_real = dis(real).cpu()
+        pred_real = dis(real).cpu()   # realX -> disX() -> maybe true
         loss_real = F.mse_loss(
             pred_real,
             torch.tensor(1.0).expand_as(pred_real)
         )
         # Discriminator's loss 2: fake loss
         fake_ = pool.query(fake)
-        pred_fake = dis(fake_).cpu()
+        pred_fake = dis(fake_).cpu()  # fakeX -> disX() -> maybe false
         loss_fake = F.mse_loss(
             pred_fake,
             torch.tensor(0.0).expand_as(pred_fake)

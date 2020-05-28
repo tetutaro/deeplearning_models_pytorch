@@ -55,18 +55,14 @@ class LightningCycleGAN(Lightning):
         return None
 
     def configure_optimizers(self: LightningCycleGAN) -> List:
-        optim_gens = optim.Adam(chain(
+        optim_gen = optim.Adam(chain(
             self.model.genAB.parameters(),
             self.model.genBA.parameters()
         ), lr=self.config.learning_rate, betas=(0.5, 0.999))
-        optim_disA = optim.Adam(
+        optim_dis = optim.Adam(chain(
             self.model.disA.parameters(),
-            lr=self.config.learning_rate, betas=(0.5, 0.999)
-        )
-        optim_disB = optim.Adam(
             self.model.disB.parameters(),
-            lr=self.config.learning_rate, betas=(0.5, 0.999)
-        )
+        ), lr=self.config.learning_rate, betas=(0.5, 0.999))
         epochs_decay = self.config.max_epochs - self.config.min_epochs
 
         def lambda_rule(epoch: int) -> float:
@@ -76,12 +72,11 @@ class LightningCycleGAN(Lightning):
                 ) / float(epochs_decay + 1)
             )
 
-        sched_gens = sched.LambdaLR(optim_gens, lr_lambda=lambda_rule)
-        sched_disA = sched.LambdaLR(optim_disA, lr_lambda=lambda_rule)
-        sched_disB = sched.LambdaLR(optim_disB, lr_lambda=lambda_rule)
+        sched_gen = sched.LambdaLR(optim_gen, lr_lambda=lambda_rule)
+        sched_dis = sched.LambdaLR(optim_dis, lr_lambda=lambda_rule)
         return [
-            [optim_gens, optim_disA, optim_disB],
-            [sched_gens, sched_disA, sched_disB],
+            [optim_gen, optim_dis],
+            [sched_gen, sched_dis],
         ]
 
     def forward(
@@ -107,14 +102,9 @@ class LightningCycleGAN(Lightning):
                 realA=realA, realB=realB
             )
         else:
-            if optimizer_idx == 1:
-                loss = self.model.forward_discriminator(
-                    side='A', real=realA
-                )
-            else:  # optimizer_idx == 2
-                loss = self.model.forward_discriminator(
-                    side='B', real=realB
-                )
+            loss = self.model.forward_discriminator(
+                realA=realA, realB=realB
+            )
         return {
             'loss': loss,
         }
