@@ -81,12 +81,12 @@ class LightningCycleGAN(Lightning):
 
     def forward(
         self: LightningCycleGAN,
+        module: str,
         realA: torch.Tensor,
         realB: torch.Tensor
     ):
         return self.model.forward(
-            realA=realA,
-            realB=realB
+            module=module, realA=realA, realB=realB
         )
 
     def training_step(
@@ -99,11 +99,11 @@ class LightningCycleGAN(Lightning):
         realB = batch[1]
         if optimizer_idx == 0:
             loss = self.forward(
-                realA=realA, realB=realB
+                module='gen', realA=realA, realB=realB
             )
         else:
-            loss = self.model.forward_discriminator(
-                realA=realA, realB=realB
+            loss = self.forward(
+                module='dis', realA=realA, realB=realB
             )
         return {
             'loss': loss,
@@ -132,16 +132,13 @@ class LightningCycleGAN(Lightning):
     ) -> Dict:
         realA = batch[0]
         realB = batch[1]
-        loss_gens = self.forward(
-            realA=realA, realB=realB
+        loss_gen = self.forward(
+            module='gen', realA=realA, realB=realB
         )
-        loss_disA = self.model.forward_discriminator(
-            side='A', real=realA
+        loss_dis = self.forward(
+            module='dis', realA=realA, realB=realB
         )
-        loss_disB = self.model.forward_discriminator(
-            side='B', real=realB
-        )
-        loss = loss_gens + loss_disA + loss_disB
+        loss = loss_gen + loss_dis
         return {
             'val_loss': loss,
         }

@@ -178,6 +178,19 @@ class CycleGAN(nn.Module):
 
     def forward(
         self: CycleGAN,
+        module: str,
+        realA: torch.Tensor,
+        realB: torch.Tensor
+    ) -> torch.Tensor:
+        if module == 'gen':
+            return self._forward_generator(realA=realA, realB=realB)
+        elif module == 'dis':
+            return self._forward_discriminator(realA=realA, realB=realB)
+        else:
+            assert(False)
+
+    def _forward_generator(
+        self: CycleGAN,
         realA: torch.Tensor,
         realB: torch.Tensor,
     ) -> torch.Tensor:
@@ -223,7 +236,7 @@ class CycleGAN(nn.Module):
         self.fakeB = fakeB.detach().clone()
         return loss_gen
 
-    def forward_discriminator(
+    def _forward_discriminator(
         self: CycleGAN,
         realA: torch.Tensor,
         realB: torch.Tensor,
