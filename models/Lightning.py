@@ -66,19 +66,14 @@ class Lightning(LightningModule, ABC):
         # detect gpus
         if torch.cuda.is_available():
             gpus = torch.cuda.device_count()
-            if gpus == 1:
-                distributed_backend = None
-            else:
-                distributed_backend = 'ddp'
         else:
             gpus = None
-            distributed_backend = None
         # create trainer instance
         self.trainer = Trainer(
             min_epochs=self.config.min_epochs,
             max_epochs=self.config.max_epochs,
             gpus=gpus,
-            distributed_backend=distributed_backend,
+            distributed_backend=None,
             early_stop_callback=early_stop_callback,
             logger=logger,
             num_sanity_val_steps=1
