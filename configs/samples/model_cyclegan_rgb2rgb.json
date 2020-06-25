@@ -5,7 +5,7 @@
     "generator_layers": 9,
     "generator_samplings": 2,
     "discriminator_filters": 64,
-    "distriminator_layers": 4,
+    "discriminator_layers": 3,
     "pool_size": 4,
     "lambda_a": 10.0,
     "lambda_b": 10.0,

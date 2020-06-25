@@ -48,7 +48,7 @@ class GeneratorCycleGAN(nn.Module):
                 in_channels=num_filters * mult,
                 out_channels=num_filters * mult // 2,
                 kernel_size=3,
-                stride=2, padding=1, bias=True
+                stride=2, padding=1, output_padding=1, bias=True
             ))
             modules.append(nn.InstanceNorm2d(
                 num_features=num_filters * mult // 2,
@@ -109,26 +109,48 @@ class DiscriminatorCycleGAN(nn.Module):
     ) -> None:
         super().__init__()
         modules = list()
-        layer_in = in_channels
-        layer_out = num_filters
-        for i in range(num_layers):
+        modules.append(nn.Conv2d(
+            in_channels=in_channels, out_channels=num_filters, kernel_size=4,
+            stride=2, padding=1, bias=True
+        ))
+        modules.append(nn.LeakyReLU(
+            negative_slope=0.2, inplace=True
+        ))
+        prev_mult = 1
+        mult = 1
+        for i in range(1, num_layers):
+            prev_mult = mult
+            mult = min(2 ** i, 8)
             modules.append(nn.Conv2d(
-                in_channels=layer_in, out_channels=layer_out, kernel_size=4,
+                in_channels=num_filters * prev_mult,
+                out_channels=num_filters * mult,
+                kernel_size=4,
                 stride=2, padding=1, bias=True
             ))
-            if i > 0:
-                modules.append(nn.InstanceNorm2d(
-                    num_features=layer_out,
-                    affine=False, track_running_stats=False
-                ))
+            modules.append(nn.InstanceNorm2d(
+                num_features=num_filters * mult,
+                affine=False, track_running_stats=False
+            ))
             modules.append(nn.LeakyReLU(
                 negative_slope=0.2, inplace=True
             ))
-            layer_in = layer_out
-            if layer_out < 512:
-                layer_out *= 2
+        prev_mult = mult
+        mult = min(2 ** num_layers, 8)
         modules.append(nn.Conv2d(
-            in_channels=layer_in, out_channels=1, kernel_size=4,
+            in_channels=num_filters * prev_mult,
+            out_channels=num_filters * mult,
+            kernel_size=4,
+            stride=1, padding=1, bias=True
+        ))
+        modules.append(nn.InstanceNorm2d(
+            num_features=num_filters * mult,
+            affine=False, track_running_stats=False
+        ))
+        modules.append(nn.LeakyReLU(
+            negative_slope=0.2, inplace=True
+        ))
+        modules.append(nn.Conv2d(
+            in_channels=num_filters * mult, out_channels=1, kernel_size=4,
             stride=1, padding=1, bias=True
         ))
         self.model = nn.Sequential(*modules)
