@@ -4,11 +4,11 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 import os
 import numpy as np
+from PIL import Image
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
-from torchvision import transforms
 from .Processor import ConfigProcessor, Processor
 from .ImageLoaderCycleGAN import ImageLoaderCycleGAN
 from .CycleGAN import CycleGAN
@@ -34,13 +34,13 @@ class ConfigProcessorCycleGAN(ConfigProcessor):
 
 
 def convert_fake(fake: torch.Tensor, size: Tuple[int]) -> np.array:
-    img = fake.cpu().squeeze(dim=0).detach()
-    compose = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize(size)
-    ])
-    img = compose(img)
-    return np.array(img, dtype=np.uint8)
+    fdata = fake.cpu().squeeze(dim=0).float().detach().numpy()
+    fdata = (
+        (np.transpose(fdata, (1, 2, 0)) + 1) / 2.0 * 255.0
+    ).astype(np.uint8)
+    fimg = Image.fromarray(fdata)
+    fimg = fimg.resize(size, Image.BICUBIC)
+    return fimg
 
 
 class ProcessorCycleGAN(Processor):
@@ -93,32 +93,14 @@ class ProcessorCycleGAN(Processor):
             self.nameA,
             "%03d.png" % epoch
         )
-        fig = plt.figure(figsize=(2.56, 2.56))
-        plt.subplots_adjust(
-            top=1, bottom=0, right=1, left=0, hspace=0, wspace=0
-        )
-        ax = plt.gca()
-        ax.imshow(fakeB)
-        ax.set_axis_off()
-        plt.margins(0, 0)
-        plt.savefig(fname, pad_inches=0)
-        plt.close(fig)
+        fakeB.save(fname)
         # save fakeA
         fname = os.path.join(
             self.output_prefix,
             self.nameB,
             "%03d.png" % epoch
         )
-        fig = plt.figure(figsize=(2.56, 2.56))
-        plt.subplots_adjust(
-            top=1, bottom=0, right=1, left=0, hspace=0, wspace=0
-        )
-        ax = plt.gca()
-        ax.imshow(fakeA)
-        ax.set_axis_off()
-        plt.margins(0, 0)
-        plt.savefig(fname, pad_inches=0)
-        plt.close(fig)
+        fakeA.save(fname)
         # back to train
         model.train(True)
         return

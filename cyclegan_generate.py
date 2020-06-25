@@ -60,19 +60,17 @@ class DataCycleGAN(object):
         setattr(self, 'name%s' % side, name)
         oside = 'A' if side == 'B' else 'B'
         fname = 'fake%s' % oside
-        compose = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((256, 256))
-        ])
         fake = ret.get(fname)
         if fake is None:
             setattr(self, fname, None)
             return
-        fdata = np.array(
-            compose(fake.cpu().squeeze(dim=0).detach()),
-            dtype=np.uint8
-        )
-        setattr(self, fname, fdata)
+        fdata = fake.cpu().squeeze(dim=0).float().detach().numpy()
+        fdata = (
+            (np.transpose(fdata, (1, 2, 0)) + 1) / 2.0 * 255.0
+        ).astype(np.uint8)
+        fimg = Image.fromarray(fdata)
+        fimg = fimg.resize((256, 256), Image.BICUBIC)
+        setattr(self, fname, fimg)
         return
 
     def output_each(
@@ -87,16 +85,7 @@ class DataCycleGAN(object):
             self.data_name,
             getattr(self, 'name%s' % oside)
         )
-        fig = plt.figure(figsize=(2.56, 2.56))
-        plt.subplots_adjust(
-            top=1, bottom=0, right=1, left=0, hspace=0, wspace=0
-        )
-        ax = plt.gca()
-        ax.imshow(fake)
-        ax.set_axis_off()
-        plt.margins(0, 0)
-        plt.savefig(fname, pad_inches=0)
-        plt.close(fig)
+        fake.save(fname)
         return
 
     def output_grid(
